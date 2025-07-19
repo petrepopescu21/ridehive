@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git init:*)",
+      "Bash(mkdir:*)",
+      "Bash(npm create:*)",
+      "Bash(rm:*)",
+      "Bash(npm install:*)",
+      "Bash(npx react-native:*)"
+    ],
+    "deny": []
+  }
+}
