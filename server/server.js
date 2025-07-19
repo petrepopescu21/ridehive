@@ -14,7 +14,7 @@ const { router: ridesRoutes, activeUsers, updateUserLocation } = require('./rout
 const app = express();
 const server = http.createServer(app);
 const allowedOrigins = process.env.NODE_ENV === 'production' 
-  ? ["https://riderz-app.netlify.app", "https://riderz-app-c959575b6647.herokuapp.com"]
+  ? ["https://ridehive-app.netlify.app", "https://ridehive-app-d5258a8e7e80.herokuapp.com"]
   : ["http://localhost:3000", "http://localhost:5173"];
 
 const io = socketIo(server, {
@@ -40,7 +40,7 @@ const swaggerOptions = {
     servers: [
       {
         url: process.env.NODE_ENV === 'production' 
-          ? 'https://riderz-app-c959575b6647.herokuapp.com'
+          ? 'https://ridehive-app-d5258a8e7e80.herokuapp.com'
           : `http://localhost:${PORT}`,
         description: process.env.NODE_ENV === 'production' ? 'Production server' : 'Development server',
       },
