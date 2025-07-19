@@ -13,9 +13,13 @@ const { router: ridesRoutes, activeUsers, updateUserLocation } = require('./rout
 
 const app = express();
 const server = http.createServer(app);
+const allowedOrigins = process.env.NODE_ENV === 'production' 
+  ? ["https://riderz-app.netlify.app", "https://riderz-app-c959575b6647.herokuapp.com"]
+  : ["http://localhost:3000", "http://localhost:5173"];
+
 const io = socketIo(server, {
   cors: {
-    origin: ["http://localhost:3000", "http://localhost:5173"],
+    origin: allowedOrigins,
     methods: ["GET", "POST"],
     credentials: true
   }
@@ -29,14 +33,16 @@ const swaggerOptions = {
   definition: {
     openapi: '3.0.0',
     info: {
-      title: 'Riderz API',
+      title: 'RideHive API',
       version: '1.0.0',
-      description: 'Real-time ride sharing app API',
+      description: 'RideHive - Real-time ride sharing app API',
     },
     servers: [
       {
-        url: `http://localhost:${PORT}`,
-        description: 'Development server',
+        url: process.env.NODE_ENV === 'production' 
+          ? 'https://riderz-app-c959575b6647.herokuapp.com'
+          : `http://localhost:${PORT}`,
+        description: process.env.NODE_ENV === 'production' ? 'Production server' : 'Development server',
       },
     ],
   },
@@ -47,7 +53,7 @@ const specs = swaggerJsdoc(swaggerOptions);
 
 // Middleware
 app.use(cors({
-  origin: ["http://localhost:3000", "http://localhost:5173"],
+  origin: allowedOrigins,
   credentials: true
 }));
 

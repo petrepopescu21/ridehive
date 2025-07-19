@@ -1,4 +1,4 @@
-# Riderz - Real-Time Ride Sharing App
+# RideHive - Real-Time Ride Sharing App
 
 A full-stack application for organizing group rides with live location tracking.
 
@@ -14,7 +14,7 @@ A full-stack application for organizing group rides with live location tracking.
 ## Architecture
 
 ```
-riderz/
+ridehive/
 ├── server/           # Node.js + Express + Socket.io backend
 ├── web-client/       # React + Vite + TypeScript (organizers)
 ├── mobile-client/    # React Native (riders)
@@ -31,7 +31,7 @@ riderz/
 ### 1. Database Setup
 ```bash
 # Create PostgreSQL database
-createdb riderz
+createdb ridehive
 
 # Set environment variables
 cp server/.env.example server/.env

@@ -7,7 +7,11 @@
       "Bash(rm:*)",
       "Bash(npm install:*)",
       "Bash(npx react-native:*)",
-      "Bash(npx @react-native-community/cli init:*)"
+      "Bash(npx @react-native-community/cli init:*)",
+      "Bash(heroku create:*)",
+      "Bash(heroku addons:create:*)",
+      "Bash(heroku auth:token:*)",
+      "Bash(heroku apps:destroy:*)"
     ],
     "deny": []
   }
