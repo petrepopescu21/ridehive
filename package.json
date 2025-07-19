@@ -1,0 +1,73 @@
+{
+  "name": "ridehive",
+  "version": "1.0.0",
+  "description": "RideHive - Real-time ride sharing application",
+  "private": true,
+  "workspaces": [
+    "server",
+    "web-client",
+    "mobile-client"
+  ],
+  "scripts": {
+    "dev": "node scripts/dev.js start",
+    "dev:start": "node scripts/dev.js start",
+    "dev:stop": "node scripts/dev.js stop",
+    "dev:restart": "node scripts/dev.js restart",
+    "dev:deps": "node scripts/dev.js deps",
+    "dev:deps:stop": "node scripts/dev.js deps:stop",
+    "dev:logs": "node scripts/dev.js logs",
+    "dev:status": "node scripts/dev.js status",
+    "dev:reset-db": "node scripts/dev.js reset-db",
+    "dev:shell:postgres": "node scripts/dev.js shell postgres",
+    "dev:shell:redis": "node scripts/dev.js shell redis",
+    "dev:test": "node scripts/dev.js test",
+    "docker:up:prod": "docker-compose up -d",
+    "docker:down:prod": "docker-compose down",
+    "docker:logs:prod": "docker-compose logs -f",
+    "docker:build:prod": "docker-compose build",
+    "docker:ps:prod": "docker-compose ps",
+    "install:all": "npm install && npm run install:server && npm run install:web && npm run install:mobile",
+    "install:server": "cd server && npm install",
+    "install:web": "cd web-client && npm install",
+    "install:mobile": "cd mobile-client && npm install",
+    "start:server": "cd server && npm run dev",
+    "start:web": "cd web-client && npm run dev",
+    "lint": "npm run lint:server && npm run lint:web",
+    "lint:server": "cd server && npm run lint --if-present",
+    "lint:web": "cd web-client && npm run lint",
+    "build": "npm run build:server && npm run build:web",
+    "build:server": "cd server && npm run build --if-present",
+    "build:web": "cd web-client && npm run build",
+    "test": "npm run test:server && npm run test:web",
+    "test:server": "cd server && npm test --if-present",
+    "test:web": "cd web-client && npm test --if-present",
+    "help": "node scripts/dev.js help"
+  },
+  "devDependencies": {
+    "chalk": "^4.1.2",
+    "cross-spawn": "^7.0.3",
+    "concurrently": "^8.2.2"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=9.0.0"
+  },
+  "keywords": [
+    "ridesharing",
+    "realtime",
+    "socketio",
+    "react",
+    "nodejs",
+    "docker"
+  ],
+  "author": "RideHive Team",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/petrepopescu21/ridehive.git"
+  },
+  "bugs": {
+    "url": "https://github.com/petrepopescu21/ridehive/issues"
+  },
+  "homepage": "https://github.com/petrepopescu21/ridehive#readme"
+}

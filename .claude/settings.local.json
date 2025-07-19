@@ -11,7 +11,8 @@
       "Bash(heroku create:*)",
       "Bash(heroku addons:create:*)",
       "Bash(heroku auth:token:*)",
-      "Bash(heroku apps:destroy:*)"
+      "Bash(heroku apps:destroy:*)",
+      "Bash(gh repo edit:*)"
     ],
     "deny": []
   }

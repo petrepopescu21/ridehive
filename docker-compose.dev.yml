@@ -1,0 +1,23 @@
+version: '3.8'
+
+# Development dependencies only - Node.js apps run natively
+services:
+  # Database with development data
+  postgres:
+    environment:
+      POSTGRES_DB: ridehive_dev
+    volumes:
+      - postgres_dev_data:/var/lib/postgresql/data
+      - ./server/db/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+      - ./server/db/dev-data.sql:/docker-entrypoint-initdb.d/02-dev-data.sql:ro
+    ports:
+      - "5432:5432"
+
+  # Redis for development
+  redis:
+    ports:
+      - "6379:6379"
+
+volumes:
+  postgres_dev_data:
+    driver: local

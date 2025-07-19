@@ -25,39 +25,51 @@ ridehive/
 
 ### Prerequisites
 - Node.js 18+
-- PostgreSQL 12+
+- Docker Desktop (for containerized development)
 - Git
 
-### 1. Database Setup
+**For Windows users**: All commands work cross-platform using npm scripts.
+
+### Native Node.js Development (Recommended)
 ```bash
-# Create PostgreSQL database
+# 1. Start dependencies (PostgreSQL + Redis in Docker)
+npm run dev
+
+# 2. In separate terminals, start applications natively:
+npm run start:server   # Start Node.js server natively
+npm run start:web      # Start Vite dev server natively
+
+# Or start both together:
+npx concurrently "npm run start:server" "npm run start:web"
+
+# Dependency management
+npm run dev:deps       # Start dependencies only
+npm run dev:deps:stop  # Stop dependencies only
+npm run dev:logs       # View dependency logs
+npm run dev:status     # Check status
+```
+
+**Services will be available at:**
+- 🌐 Web Client: http://localhost:5173 (Vite dev server)
+- 🚀 Server API: http://localhost:3001  
+- 📚 API Docs: http://localhost:3001/api-docs
+- 🗄️ PostgreSQL: localhost:5432 (Docker)
+- 🔴 Redis: localhost:6379 (Docker)
+
+### Manual Setup (Alternative)
+```bash
+# 1. Database Setup
 createdb ridehive
-
-# Set environment variables
 cp server/.env.example server/.env
-# Edit server/.env with your database credentials
-```
 
-### 2. Server Setup
-```bash
-cd server
-npm install
-npm run db:setup  # Creates tables and sample data
-npm run dev       # Starts on http://localhost:3001
-```
+# 2. Server
+cd server && npm install && npm run db:setup && npm run dev
 
-### 3. Web Client Setup
-```bash
-cd web-client
-npm install
-npm run dev       # Starts on http://localhost:5173
-```
+# 3. Web Client  
+cd web-client && npm install && npm run dev
 
-### 4. Mobile Client Setup
-```bash
-cd mobile-client
-npm install
-# For React Native development, see mobile-client/README.md
+# 4. Mobile Client
+cd mobile-client && npm install
 ```
 
 ## Usage
@@ -79,6 +91,47 @@ npm install
 Interactive API docs available at: http://localhost:3001/api-docs
 
 ## Development
+
+### Development Scripts (Cross-Platform)
+
+All development tasks use npm scripts that work on Windows, macOS, and Linux:
+
+```bash
+# Native Node.js Development
+npm run dev                # Start dependencies, then start apps manually
+npm run start:server       # Start Node.js server natively  
+npm run start:web          # Start Vite dev server natively
+
+# Dependency Management (Docker)
+npm run dev:deps           # Start dependencies (PostgreSQL + Redis)
+npm run dev:deps:stop      # Stop dependencies only
+npm run dev:stop           # Stop everything (apps + dependencies)
+npm run dev:restart        # Restart development environment
+
+# Monitoring and debugging
+npm run dev:logs           # View dependency logs
+npm run dev:status         # Check environment status
+npm run dev:shell:postgres # Open shell in postgres container
+npm run dev:shell:redis    # Open shell in redis container
+
+# Maintenance
+npm run dev:reset-db       # Reset database (use -- --force)
+npm run dev:test           # Run tests
+
+# Production (Docker)
+npm run docker:up:prod     # Start production containers
+npm run docker:down:prod   # Stop production containers
+
+# Help
+npm run help               # Show all available commands
+```
+
+**Development Workflow:**
+1. `npm run dev` - Start dependencies and see instructions
+2. `npm run start:server` (in new terminal) - Start server natively
+3. `npm run start:web` (in new terminal) - Start web client natively
+
+**Windows PowerShell/CMD users**: All commands work identically.
 
 ### Environment Variables
 - `PORT`: Server port (default: 3001)
@@ -128,26 +181,32 @@ Interactive API docs available at: http://localhost:3001/api-docs
 
 ## Deployment
 
-### Server
+### Production with Docker (Recommended)
 ```bash
+# Use production Docker Compose
+npm run docker:up:prod
+
+# Or manually:
+docker-compose up -d
+```
+
+### Manual Production Setup
+```bash
+# Server
 cd server
 npm run build  # If using TypeScript build
 npm start
-```
 
-### Web Client
-```bash
+# Web Client  
 cd web-client
 npm run build
 # Serve dist/ folder with nginx/apache
-```
 
-### Mobile Apps
-```bash
+# Mobile Apps
 cd mobile-client
 # iOS
 npx react-native run-ios
-# Android
+# Android  
 npx react-native run-android
 ```
 
