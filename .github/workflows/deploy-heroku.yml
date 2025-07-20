@@ -74,17 +74,8 @@ jobs:
           # First, set up the database schema
           heroku run 'cd server && node db/setup.js' --app ${{ env.HEROKU_APP_NAME }}
           
-          # Then run migrations if they exist
-          heroku run 'cd server && node -e "
-            const { query } = require(\"./db/database\");
-            const fs = require(\"fs\");
-            if (fs.existsSync(\"./db/migrations/001_add_dual_pins.sql\")) {
-              const sql = fs.readFileSync(\"./db/migrations/001_add_dual_pins.sql\", \"utf8\");
-              query(sql).then(() => console.log(\"Migration complete\")).catch(console.error);
-            } else {
-              console.log(\"No migration file found\");
-            }
-          "' --app ${{ env.HEROKU_APP_NAME }}
+          # Then run migrations
+          heroku run 'cd server && node db/migrate.js' --app ${{ env.HEROKU_APP_NAME }}
         env:
           HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}
         
