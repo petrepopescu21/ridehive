@@ -81,7 +81,6 @@ jobs:
               console.log(\"No migration file found\");
             }
           "' --app ${{ env.HEROKU_APP_NAME }}
-        continue-on-error: true
         env:
           HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}
         
@@ -89,7 +88,6 @@ jobs:
         run: |
           sleep 30 # Wait for deployment to complete
           curl -f https://${{ env.HEROKU_APP_NAME }}.herokuapp.com/health || exit 1
-        continue-on-error: true
 
       - name: Deployment notification
         if: always()

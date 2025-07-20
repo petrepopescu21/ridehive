@@ -39,7 +39,11 @@
       "Bash(cat:*)",
       "Bash(docker exec:*)",
       "WebFetch(domain:github.com)",
-      "WebFetch(domain:raw.githubusercontent.com)"
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "Bash(heroku auth:*)",
+      "Bash(heroku apps:*)",
+      "Bash(gh secret set:*)",
+      "Bash(gh secret:*)"
     ],
     "deny": []
   }
