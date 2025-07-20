@@ -21,8 +21,8 @@ const BASE_URL = process.env.BASE_URL || `http://localhost:${PORT}`;
 const SESSION_SECRET = process.env.SESSION_SECRET || 'your-super-secret-session-key';
 
 const allowedOrigins = process.env.NODE_ENV === 'production' 
-  ? [BASE_URL]
-  : ["http://localhost:3000", "http://localhost:5173", "http://localhost:3001"];
+  ? [BASE_URL, "http://localhost:3000", "http://localhost:8081", "http://localhost:5173"]
+  : ["http://localhost:3000", "http://localhost:5173", "http://localhost:3001", "http://localhost:8081"];
 
 // CORS origin function for development
 const corsOriginFunction = (origin, callback) => {
@@ -30,7 +30,8 @@ const corsOriginFunction = (origin, callback) => {
   if (!origin) return callback(null, true);
   
   if (process.env.NODE_ENV === 'production') {
-    if (allowedOrigins.includes(origin)) {
+    // In production, allow specific origins including localhost for development tools
+    if (allowedOrigins.includes(origin) || origin.startsWith('http://localhost:')) {
       return callback(null, true);
     }
     return callback(new Error('Not allowed by CORS'));
