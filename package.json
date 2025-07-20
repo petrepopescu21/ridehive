@@ -57,8 +57,8 @@
     "vite": "^7.0.4"
   },
   "engines": {
-    "node": ">=18.0.0",
-    "npm": ">=9.0.0"
+    "node": "22.17.x",
+    "npm": ">=10.0.0"
   },
   "keywords": [
     "ridesharing",

@@ -6,7 +6,7 @@ on:
   workflow_dispatch: # Allow manual triggers
 
 env:
-  NODE_VERSION: '18'
+  NODE_VERSION: '22.17'
   HEROKU_APP_NAME: ${{ secrets.HEROKU_APP_NAME }}
 
 jobs:
