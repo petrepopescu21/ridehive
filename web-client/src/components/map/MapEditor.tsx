@@ -162,7 +162,6 @@ export const MapEditor = ({
   return (
     <div className="h-full w-full relative">
       <MapContainer
-        key={`map-${waypoints.length}`}
         center={[initialCenter.lat, initialCenter.lng]}
         zoom={MAP_ZOOM_LEVELS.DEFAULT}
         className="h-full w-full"
@@ -242,6 +241,7 @@ export const MapEditor = ({
         {/* Display calculated route */}
         {routeCoordinates.length > 0 && (
           <Polyline
+            key={`route-${routeCoordinates.length}-${routeCoordinates.map(c => `${c.lat},${c.lng}`).join('|')}`}
             positions={routeCoordinates.map(coord => [coord.lat, coord.lng])}
             color="#3b82f6"
             weight={4}
