@@ -65,8 +65,7 @@
     "realtime",
     "socketio",
     "react",
-    "nodejs",
-    "docker"
+    "nodejs"
   ],
   "author": "RideHive Team",
   "license": "MIT",

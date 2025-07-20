@@ -84,9 +84,9 @@ jobs:
           usedocker: false
           
       - name: Setup Heroku CLI
-        uses: extractions/setup-heroku@v1
-        with:
-          api-key: ${{ secrets.HEROKU_API_KEY }}
+        run: |
+          curl https://cli-assets.heroku.com/install.sh | sh
+          echo ${{ secrets.HEROKU_API_KEY }} | heroku auth:token
           
       - name: Run database migrations
         run: |
@@ -101,6 +101,8 @@ jobs:
             }
           "' --app ${{ env.HEROKU_APP_NAME }}
         continue-on-error: true
+        env:
+          HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}
         
       - name: Health check
         run: |
