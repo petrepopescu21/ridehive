@@ -12,10 +12,15 @@ export const Login = ({ onLoginSuccess }: LoginProps) => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    console.log('🔐 Login form submitted with password:', password);
+    console.log('🔐 Password length:', password.length);
+    
     try {
       await login(password);
+      console.log('✅ Login successful, calling onLoginSuccess');
       onLoginSuccess();
     } catch (err) {
+      console.error('❌ Login failed in form:', err);
       // Error is handled by useAuth hook
     }
   };

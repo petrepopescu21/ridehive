@@ -1,7 +1,7 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 import { io, Socket } from 'socket.io-client';
 import { API_BASE_URL, SOCKET_EVENTS } from '../../../shared/constants';
-import type { SocketEvents, ActiveUser, LocationUpdate } from '../../../shared/types';
+import type { ActiveUser, LocationUpdate } from '../../../shared/types';
 
 interface UseSocketProps {
   rideId?: number;
@@ -17,6 +17,12 @@ export const useSocket = ({ rideId, userId, enabled = true }: UseSocketProps = {
 
   const connect = () => {
     if (socketRef.current?.connected) return;
+
+    // Disconnect existing socket if any
+    if (socketRef.current) {
+      socketRef.current.removeAllListeners();
+      socketRef.current.disconnect();
+    }
 
     socketRef.current = io(API_BASE_URL, {
       withCredentials: true,
@@ -70,6 +76,7 @@ export const useSocket = ({ rideId, userId, enabled = true }: UseSocketProps = {
 
   const disconnect = () => {
     if (socketRef.current) {
+      socketRef.current.removeAllListeners();
       socketRef.current.disconnect();
       socketRef.current = null;
       setConnected(false);
@@ -83,7 +90,7 @@ export const useSocket = ({ rideId, userId, enabled = true }: UseSocketProps = {
     socketRef.current.emit(SOCKET_EVENTS.JOIN_RIDE, { rideId, userId });
   };
 
-  const updateLocation = (rideId: number, userId: string, lat: number, lng: number, role: 'organizer' | 'rider') => {
+  const updateLocation = useCallback((rideId: number, userId: string, lat: number, lng: number, role: 'organizer' | 'rider') => {
     if (!socketRef.current?.connected) return;
 
     socketRef.current.emit(SOCKET_EVENTS.LOCATION_UPDATE, {
@@ -93,7 +100,7 @@ export const useSocket = ({ rideId, userId, enabled = true }: UseSocketProps = {
       lng,
       role,
     });
-  };
+  }, []);
 
   const endRide = (rideId: number) => {
     if (!socketRef.current?.connected) return;

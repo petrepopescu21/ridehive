@@ -12,11 +12,14 @@ export const useAuth = () => {
 
   const checkAuthStatus = async () => {
     try {
+      console.log('🔐 Checking auth status...');
       setLoading(true);
       setError(null);
       const status = await authAPI.getStatus();
+      console.log('✅ Auth status received:', status);
       setAuthStatus(status);
     } catch (err) {
+      console.error('❌ Auth check failed:', err);
       setError(err instanceof Error ? err.message : 'Failed to check auth status');
       setAuthStatus({ isAuthenticated: false, userId: null });
     } finally {

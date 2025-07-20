@@ -12,7 +12,13 @@
       "Bash(heroku addons:create:*)",
       "Bash(heroku auth:token:*)",
       "Bash(heroku apps:destroy:*)",
-      "Bash(gh repo edit:*)"
+      "Bash(gh repo edit:*)",
+      "Bash(npm run dev:*)",
+      "Bash(npm run start:server:*)",
+      "Bash(curl:*)",
+      "Bash(pkill:*)",
+      "Bash(taskkill:*)",
+      "Bash(npm run lint)"
     ],
     "deny": []
   }

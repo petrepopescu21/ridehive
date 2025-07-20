@@ -106,14 +106,41 @@ async function startApps() {
     await new Promise(resolve => setTimeout(resolve, 5000));
   }
   
-  // Start both server and web client concurrently
-  const child = spawn('npx', ['concurrently', 
-    '--prefix', 'name',
-    '--names', 'SERVER,WEB',
-    '--prefix-colors', 'cyan,magenta',
-    '"npm run start:server"',
-    '"npm run start:web"'
-  ], { stdio: 'inherit' });
+  log.info('Launching server and web client with verbose logging...');
+  
+  // Start both server and web client concurrently with enhanced logging
+  const child = spawn('npm', ['run', 'start:server'], { 
+    stdio: 'inherit', 
+    shell: true,
+    detached: false 
+  });
+  
+  // Start web client in parallel
+  setTimeout(() => {
+    const webChild = spawn('npm', ['run', 'start:web'], { 
+      stdio: 'inherit', 
+      shell: true,
+      detached: false 
+    });
+    
+    webChild.on('spawn', () => {
+      log.success('Web client started successfully!');
+    });
+    
+    webChild.on('error', (error) => {
+      log.error(`Failed to start web client: ${error.message}`);
+    });
+  }, 2000);
+  
+  // Log process startup
+  child.on('spawn', () => {
+    log.success('Applications started successfully!');
+    log.info('You should see server and web client logs below...');
+  });
+  
+  child.on('error', (error) => {
+    log.error(`Failed to start applications: ${error.message}`);
+  });
   
   return new Promise((resolve, reject) => {
     child.on('close', (code) => {
@@ -161,7 +188,7 @@ async function startDev() {
     log.info('Waiting for dependencies to be ready...');
     await new Promise(resolve => setTimeout(resolve, 5000));
     
-    log.success('Development environment ready!');
+    log.success('Dependencies ready! Starting applications...');
     log.info('Services will be available at:');
     console.log('  🌐 Web Client: http://localhost:5173 (Vite dev server)');
     console.log('  🚀 Server API: http://localhost:3001');
@@ -169,9 +196,10 @@ async function startDev() {
     console.log('  🗄️ PostgreSQL: localhost:5432');
     console.log('  🔴 Redis: localhost:6379');
     console.log('');
-    log.info('To start applications: npm run start:server & npm run start:web');
-    log.info('Or start both together: npx concurrently "npm run start:server" "npm run start:web"');
-    log.info('Stop dependencies with: npm run dev:deps:stop');
+    
+    // Start both server and web client applications
+    log.info('Starting server and web client applications...');
+    await startApps();
     
   } catch (error) {
     log.error(`Failed to start development environment: ${error.message}`);

@@ -19,17 +19,33 @@ const api = axios.create({
 
 export const authAPI = {
   async login(password: string): Promise<AuthResponse> {
-    const response = await api.post(ENDPOINTS.AUTH.ORGANIZER, { password });
-    return response.data;
+    console.log('📤 API: Attempting login with password:', password);
+    console.log('📤 API: Posting to:', `${API_BASE_URL}${ENDPOINTS.AUTH.ORGANIZER}`);
+    try {
+      const response = await api.post(ENDPOINTS.AUTH.ORGANIZER, { password });
+      console.log('✅ API: Login successful:', response.data);
+      return response.data;
+    } catch (error) {
+      console.error('❌ API: Login failed:', error);
+      throw error;
+    }
   },
 
   async logout(): Promise<void> {
+    console.log('📤 API: Attempting logout');
     await api.post(ENDPOINTS.AUTH.LOGOUT);
   },
 
   async getStatus(): Promise<AuthStatus> {
-    const response = await api.get(ENDPOINTS.AUTH.STATUS);
-    return response.data;
+    console.log('📤 API: Checking auth status');
+    try {
+      const response = await api.get(ENDPOINTS.AUTH.STATUS);
+      console.log('✅ API: Auth status response:', response.data);
+      return response.data;
+    } catch (error) {
+      console.error('❌ API: Auth status failed:', error);
+      throw error;
+    }
   },
 };
 

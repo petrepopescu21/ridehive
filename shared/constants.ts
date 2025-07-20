@@ -31,8 +31,8 @@ export const SOCKET_EVENTS = {
 } as const;
 
 export const DEFAULT_MAP_CENTER = {
-  lat: 40.7128,
-  lng: -74.0060,
+  lat: 44.4268,
+  lng: 26.1025,
 } as const;
 
 export const MAP_ZOOM_LEVELS = {

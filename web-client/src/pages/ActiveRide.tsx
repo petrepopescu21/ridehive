@@ -62,11 +62,19 @@ export const ActiveRide = ({ rideId, onEndRide }: ActiveRideProps) => {
     if (!connected || !userId || latitude === null || longitude === null) return;
 
     const interval = setInterval(() => {
-      updateLocation(rideId, userId, latitude, longitude, 'organizer');
+      try {
+        updateLocation(rideId, userId, latitude, longitude, 'organizer');
+      } catch (error) {
+        console.warn('Failed to update location:', error);
+      }
     }, LOCATION_UPDATE_INTERVAL);
 
     // Send initial location immediately
-    updateLocation(rideId, userId, latitude, longitude, 'organizer');
+    try {
+      updateLocation(rideId, userId, latitude, longitude, 'organizer');
+    } catch (error) {
+      console.warn('Failed to send initial location:', error);
+    }
 
     return () => clearInterval(interval);
   }, [connected, userId, latitude, longitude, rideId, updateLocation]);

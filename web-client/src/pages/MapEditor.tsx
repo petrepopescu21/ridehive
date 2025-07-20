@@ -1,8 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { MapEditor as MapEditorComponent } from '../components/map/MapEditor';
 import { WaypointList } from '../components/common/WaypointList';
 import { mapsAPI } from '../utils/api';
-import type { Map, Waypoint } from '../../../shared/types';
+import type { Waypoint } from '../../../shared/types';
 
 interface MapEditorPageProps {
   mapId?: number;
@@ -23,9 +23,9 @@ export const MapEditorPage = ({ mapId, onBack }: MapEditorPageProps) => {
     if (mapId) {
       loadMap();
     }
-  }, [mapId]);
+  }, [mapId, loadMap]);
 
-  const loadMap = async () => {
+  const loadMap = useCallback(async () => {
     if (!mapId) return;
 
     try {
@@ -40,7 +40,7 @@ export const MapEditorPage = ({ mapId, onBack }: MapEditorPageProps) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [mapId]);
 
   const handleSave = async () => {
     if (!title.trim()) {

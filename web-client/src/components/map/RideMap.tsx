@@ -1,10 +1,11 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, Polyline } from 'react-leaflet';
 import { Icon } from 'leaflet';
+import * as L from 'leaflet';
 import { DEFAULT_MAP_CENTER, MAP_ZOOM_LEVELS, USER_COLORS } from '../../../../shared/constants';
 import type { Waypoint, ActiveUser } from '../../../../shared/types';
 
-// Custom icons for different user types
+// Custom icons for different user types (created once to prevent memory leaks)
 const organizerIcon = new Icon({
   iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
   iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',
@@ -27,6 +28,17 @@ const riderIcon = new Icon({
   className: 'rider-marker'
 });
 
+const waypointIcon = new Icon({
+  iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
+  iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',
+  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
+  iconSize: [25, 41],
+  iconAnchor: [12, 41],
+  popupAnchor: [1, -34],
+  shadowSize: [41, 41],
+  className: 'waypoint-marker'
+});
+
 interface RideMapProps {
   waypoints: Waypoint[];
   activeUsers: { [userId: string]: ActiveUser };
@@ -34,18 +46,36 @@ interface RideMapProps {
 }
 
 export const RideMap = ({ waypoints, activeUsers, center }: RideMapProps) => {
-  const mapRef = useRef<any>(null);
+  const mapRef = useRef<L.Map | null>(null);
+  const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
 
-  // Calculate map center based on waypoints or active users
+  // Get user's current location
+  useEffect(() => {
+    if (navigator.geolocation && !center) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          setUserLocation({
+            lat: position.coords.latitude,
+            lng: position.coords.longitude,
+          });
+        },
+        (error) => {
+          console.warn('Could not get user location:', error.message);
+        }
+      );
+    }
+  }, [center]);
+
+  // Calculate map center based on waypoints, user location, or default
   const mapCenter = center || 
     (waypoints.length > 0 
       ? {
           lat: waypoints.reduce((sum, wp) => sum + wp.lat, 0) / waypoints.length,
           lng: waypoints.reduce((sum, wp) => sum + wp.lng, 0) / waypoints.length,
         }
-      : DEFAULT_MAP_CENTER);
+      : userLocation || DEFAULT_MAP_CENTER);
 
-  // Auto-fit bounds when users or waypoints change
+  // Auto-fit bounds when users or waypoints change (throttled)
   useEffect(() => {
     if (!mapRef.current) return;
 
@@ -65,7 +95,16 @@ export const RideMap = ({ waypoints, activeUsers, center }: RideMapProps) => {
     });
 
     if (allPoints.length > 1) {
-      map.fitBounds(allPoints, { padding: [20, 20] });
+      // Throttle map bounds updates to prevent excessive recalculation
+      const timeoutId = setTimeout(() => {
+        try {
+          map.fitBounds(allPoints, { padding: [20, 20] });
+        } catch (error) {
+          console.warn('Error fitting map bounds:', error);
+        }
+      }, 1000);
+
+      return () => clearTimeout(timeoutId);
     }
   }, [waypoints, activeUsers]);
 
@@ -100,16 +139,7 @@ export const RideMap = ({ waypoints, activeUsers, center }: RideMapProps) => {
           <Marker
             key={`waypoint-${index}`}
             position={[waypoint.lat, waypoint.lng]}
-            icon={new Icon({
-              iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
-              iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',
-              shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
-              iconSize: [25, 41],
-              iconAnchor: [12, 41],
-              popupAnchor: [1, -34],
-              shadowSize: [41, 41],
-              className: 'waypoint-marker'
-            })}
+            icon={waypointIcon}
           >
             <Popup>
               <div className="text-center">

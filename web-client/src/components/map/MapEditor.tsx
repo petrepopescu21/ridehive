@@ -1,11 +1,11 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, useMapEvents } from 'react-leaflet';
-import { Icon, LatLng } from 'leaflet';
+import { Icon } from 'leaflet';
 import { DEFAULT_MAP_CENTER, MAP_ZOOM_LEVELS } from '../../../../shared/constants';
 import type { Waypoint } from '../../../../shared/types';
 
 // Fix for default markers
-delete (Icon.Default.prototype as any)._getIconUrl;
+delete (Icon.Default.prototype as Record<string, unknown>)._getIconUrl;
 Icon.Default.mergeOptions({
   iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',
   iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
@@ -30,6 +30,24 @@ const MapClickHandler = ({ onMapClick }: { onMapClick: (lat: number, lng: number
 export const MapEditor = ({ waypoints, onWaypointsChange, readonly = false }: MapEditorProps) => {
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const [editingName, setEditingName] = useState('');
+  const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
+
+  // Get user's current location
+  useEffect(() => {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          setUserLocation({
+            lat: position.coords.latitude,
+            lng: position.coords.longitude,
+          });
+        },
+        (error) => {
+          console.warn('Could not get user location:', error.message);
+        }
+      );
+    }
+  }, []);
 
   const handleMapClick = useCallback((lat: number, lng: number) => {
     if (readonly) return;
@@ -65,13 +83,13 @@ export const MapEditor = ({ waypoints, onWaypointsChange, readonly = false }: Ma
     setEditingName('');
   };
 
-  // Calculate map center based on waypoints
+  // Calculate map center based on waypoints, user location, or default
   const mapCenter = waypoints.length > 0 
     ? {
         lat: waypoints.reduce((sum, wp) => sum + wp.lat, 0) / waypoints.length,
         lng: waypoints.reduce((sum, wp) => sum + wp.lng, 0) / waypoints.length,
       }
-    : DEFAULT_MAP_CENTER;
+    : userLocation || DEFAULT_MAP_CENTER;
 
   return (
     <div className="h-full w-full">
