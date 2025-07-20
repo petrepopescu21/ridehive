@@ -241,7 +241,6 @@ export const MapEditor = ({
         {/* Display calculated route */}
         {routeCoordinates.length > 0 && (
           <Polyline
-            key={`route-${routeCoordinates.length}-${routeCoordinates.map(c => `${c.lat},${c.lng}`).join('|')}`}
             positions={routeCoordinates.map(coord => [coord.lat, coord.lng])}
             color="#3b82f6"
             weight={4}
