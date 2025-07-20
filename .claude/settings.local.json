@@ -37,7 +37,9 @@
       "Bash(tail:*)",
       "Bash(npx pg-sql:*)",
       "Bash(cat:*)",
-      "Bash(docker exec:*)"
+      "Bash(docker exec:*)",
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:raw.githubusercontent.com)"
     ],
     "deny": []
   }
