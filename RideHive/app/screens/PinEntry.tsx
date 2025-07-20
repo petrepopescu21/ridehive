@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -8,6 +8,7 @@ import {
   Alert,
   ActivityIndicator,
   SafeAreaView,
+  Platform,
 } from 'react-native';
 import { ridesAPI } from '../utils/api';
 import { RideWithUsers } from '../../../shared/types';
@@ -20,6 +21,30 @@ export const PinEntry: React.FC<PinEntryProps> = ({ onJoinSuccess }) => {
   const [pinCode, setPinCode] = useState('');
   const [loading, setLoading] = useState(false);
 
+  // Test network connectivity on component mount
+  useEffect(() => {
+    const testConnection = async () => {
+      try {
+        console.log('🔍 [PinEntry] Testing network connectivity...');
+        const isWeb = Platform.OS === 'web';
+        const API_URL = isWeb && __DEV__ 
+          ? 'http://localhost:3001' 
+          : 'https://ridehive-app-d5258a8e7e80.herokuapp.com';
+        
+        console.log('🔧 [PinEntry] Using API URL:', API_URL, 'Platform:', Platform.OS, 'isWeb:', isWeb, '__DEV__:', __DEV__);
+        const response = await fetch(`${API_URL}/health`);
+        console.log('✅ [PinEntry] Health check response:', {
+          status: response.status,
+          ok: response.ok
+        });
+      } catch (error) {
+        console.error('❌ [PinEntry] Network connectivity test failed:', error);
+      }
+    };
+    
+    testConnection();
+  }, []);
+
   const handleJoinRide = async () => {
     if (!pinCode.trim()) {
       Alert.alert('Error', 'Please enter a PIN code');
@@ -28,12 +53,23 @@ export const PinEntry: React.FC<PinEntryProps> = ({ onJoinSuccess }) => {
 
     try {
       setLoading(true);
+      console.log('🔍 [PinEntry] Attempting to join ride with PIN:', pinCode.trim());
+      
       const rideData = await ridesAPI.joinRide(pinCode.trim());
+      
+      console.log('✅ [PinEntry] Successfully joined ride:', rideData);
       onJoinSuccess(rideData);
     } catch (error: any) {
+      console.error('❌ [PinEntry] Failed to join ride:', error);
+      console.error('❌ [PinEntry] Error details:', {
+        message: error.message,
+        stack: error.stack,
+        name: error.name
+      });
+      
       Alert.alert(
         'Failed to Join Ride',
-        error.message || 'Unable to join ride'
+        error.message || 'Unable to join ride. Check console for details.'
       );
     } finally {
       setLoading(false);

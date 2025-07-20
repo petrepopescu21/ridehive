@@ -1,9 +1,22 @@
 import { useEffect, useRef, useState } from 'react';
+import { Platform } from 'react-native';
 import { io, Socket } from 'socket.io-client';
 import { SOCKET_EVENTS } from '../../../shared/constants';
 import { ActiveUser, LocationUpdate, SocketEvents } from '../../../shared/types';
 
-const SOCKET_URL = __DEV__ ? 'http://localhost:3001' : 'https://your-production-url.com';
+// For mobile devices (iOS/Android), always use production URL
+// Only use localhost for web platform in development
+const isWeb = Platform.OS === 'web';
+const SOCKET_URL = isWeb && __DEV__ 
+  ? 'http://localhost:3001' 
+  : 'https://ridehive-app-d5258a8e7e80.herokuapp.com';
+
+console.log('🔧 [Socket] Configuration:', {
+  SOCKET_URL,
+  __DEV__,
+  Platform: Platform.OS,
+  isWeb
+});
 
 export const useSocket = (rideId?: number, userId?: string) => {
   const [isConnected, setIsConnected] = useState(false);

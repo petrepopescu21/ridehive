@@ -1,7 +1,9 @@
 // API base URL - for web client (empty = relative URLs), for mobile (explicit URL)
 export const API_BASE_URL = typeof window !== 'undefined' 
   ? '' // Web client: use relative URLs (proxy in dev, same origin in prod)
-  : 'http://localhost:3001'; // Mobile/Node: use explicit URL
+  : process.env.NODE_ENV === 'production' 
+    ? 'https://ridehive-app-d5258a8e7e80.herokuapp.com' // Mobile production: Heroku URL
+    : 'http://localhost:3001'; // Mobile development: localhost
 
 export const ENDPOINTS = {
   AUTH: {

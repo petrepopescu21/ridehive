@@ -222,7 +222,7 @@
             try {
                 // Join ride via API
                 log('Joining ride with PIN: ' + pinCode);
-                const response = await fetch('http://localhost:3001/api/rides/join', {
+                const response = await fetch('https://ridehive-app-d5258a8e7e80.herokuapp.com/api/rides/join', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',

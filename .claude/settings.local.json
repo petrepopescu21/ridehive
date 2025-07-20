@@ -45,7 +45,15 @@
       "Bash(gh secret set:*)",
       "Bash(gh secret:*)",
       "Bash(heroku logs:*)",
-      "Bash(heroku config:*)"
+      "Bash(heroku config:*)",
+      "Bash(npx eas build:*)",
+      "Bash(S:SDKAndroidemulatoremulator.exe -list-avds)",
+      "Bash(\"S:\\SDK\\Android\\emulator\\emulator.exe\" -list-avds)",
+      "Bash(\"S:\\SDK\\Android\\emulator\\emulator.exe\" @Medium_Phone_API_36.0)",
+      "Bash(tasklist)",
+      "Bash(kill:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)"
     ],
     "deny": []
   }

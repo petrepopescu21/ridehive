@@ -12,7 +12,17 @@
       "supportsTablet": true,
       "infoPlist": {
         "NSLocationWhenInUseUsageDescription": "RideHive needs location access to share your position with other riders during a ride.",
-        "NSLocationAlwaysAndWhenInUseUsageDescription": "RideHive needs location access to share your position with other riders during a ride."
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "RideHive needs location access to share your position with other riders during a ride.",
+        "NSAppTransportSecurity": {
+          "NSAllowsArbitraryLoads": true,
+          "NSExceptionDomains": {
+            "ridehive-app-d5258a8e7e80.herokuapp.com": {
+              "NSExceptionAllowsInsecureHTTPLoads": false,
+              "NSExceptionMinimumTLSVersion": "TLSv1.2",
+              "NSExceptionRequiresForwardSecrecy": false
+            }
+          }
+        }
       }
     },
     "android": {
@@ -26,7 +36,8 @@
         "ACCESS_COARSE_LOCATION",
         "FOREGROUND_SERVICE",
         "ACCESS_BACKGROUND_LOCATION"
-      ]
+      ],
+      "package": "com.petrepopescu21.RideHive"
     },
     "web": {
       "bundler": "metro",
@@ -46,13 +57,14 @@
         }
       ]
     ],
-    "permissions": [
-      "LOCATION",
-      "ACCESS_FINE_LOCATION",
-      "ACCESS_COARSE_LOCATION"
-    ],
     "experiments": {
       "typedRoutes": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "e13ae111-d417-4c40-8b19-18af161c6d40"
+      }
     }
   }
 }
