@@ -43,7 +43,9 @@
       "Bash(heroku auth:*)",
       "Bash(heroku apps:*)",
       "Bash(gh secret set:*)",
-      "Bash(gh secret:*)"
+      "Bash(gh secret:*)",
+      "Bash(heroku logs:*)",
+      "Bash(heroku config:*)"
     ],
     "deny": []
   }

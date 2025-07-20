@@ -15,6 +15,11 @@ const routingRoutes = require('./routes/routing');
 
 const app = express();
 const server = http.createServer(app);
+
+const PORT = process.env.PORT || 3001;
+const BASE_URL = process.env.BASE_URL || `http://localhost:${PORT}`;
+const SESSION_SECRET = process.env.SESSION_SECRET || 'your-super-secret-session-key';
+
 const allowedOrigins = process.env.NODE_ENV === 'production' 
   ? [BASE_URL]
   : ["http://localhost:3000", "http://localhost:5173", "http://localhost:3001"];
@@ -45,10 +50,6 @@ const io = socketIo(server, {
     credentials: true
   }
 });
-
-const PORT = process.env.PORT || 3001;
-const BASE_URL = process.env.BASE_URL || `http://localhost:${PORT}`;
-const SESSION_SECRET = process.env.SESSION_SECRET || 'your-super-secret-session-key';
 
 // Swagger configuration
 const swaggerOptions = {
