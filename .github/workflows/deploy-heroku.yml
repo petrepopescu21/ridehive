@@ -69,8 +69,12 @@ jobs:
           curl https://cli-assets.heroku.com/install.sh | sh
           echo ${{ secrets.HEROKU_API_KEY }} | heroku auth:token
           
-      - name: Run database migrations
+      - name: Setup database and run migrations
         run: |
+          # First, set up the database schema
+          heroku run 'cd server && node db/setup.js' --app ${{ env.HEROKU_APP_NAME }}
+          
+          # Then run migrations if they exist
           heroku run 'cd server && node -e "
             const { query } = require(\"./db/database\");
             const fs = require(\"fs\");
