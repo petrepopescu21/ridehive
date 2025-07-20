@@ -5,6 +5,17 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Essential Commands
 
 ### Development Setup
+
+#### 🚀 Full Development Environment (Recommended)
+```bash
+# Start everything: dependencies + server + web + mobile (Android)
+npm run dev:full
+
+# Or for iOS (macOS only)
+npm run dev:full:ios
+```
+
+#### 📦 Individual Services
 ```bash
 # Start dependencies (PostgreSQL + Redis) and get instructions
 npm run dev
@@ -12,8 +23,11 @@ npm run dev
 # Start individual services (run in separate terminals after npm run dev)
 npm run start:server    # Start Node.js server natively on :3001
 npm run start:web       # Start Vite dev server natively on :5173
+npm run start:mobile    # Start Expo dev server
+npm run android         # Start Android emulator
+npm run ios             # Start iOS simulator
 
-# Or start both together
+# Or start server + web together
 npx concurrently "npm run start:server" "npm run start:web"
 ```
 
@@ -24,36 +38,45 @@ npm run dev:deps:stop   # Stop dependencies only
 npm run dev:status      # Check environment status
 npm run dev:logs        # View dependency logs
 npm run dev:reset-db    # Reset database (use -- --force for confirmation)
+npm run dev:cleanup     # Fix broken PowerShell console after Ctrl+C
 ```
 
 ### Build & Quality
 ```bash
-npm run build           # Build all projects (server + web)
+npm run build           # Build web client for production
 npm run lint            # Lint server and web client
 npm run test            # Run tests for all projects (currently minimal)
 
-# Individual project commands
-npm run build:server    # Build server (if TypeScript build exists)
-npm run build:web       # Build web client for production
+# Production deployment
+npm run start           # Start production server (serves both API and web)
+npm run build:web       # Build web client only
 npm run lint:server     # Lint server code
 npm run lint:web        # Lint web client code
 ```
 
 ### Mobile Development
 ```bash
-cd mobile-client
+cd RideHive
 npm run android         # Run on Android device/emulator
 npm run ios             # Run on iOS device/simulator
-npm run start           # Start Metro bundler
+npm run start           # Start Metro bundler with Expo
+
+# Or from root directory
+npm run start:mobile    # Start Metro bundler
+npm run android         # Run on Android
+npm run ios             # Run on iOS
 ```
 
 ## Architecture Overview
 
-**Monorepo Structure** with npm workspaces:
-- `server/` - Node.js + Express + Socket.io backend
-- `web-client/` - React + Vite + TypeScript (organizer dashboard)
-- `mobile-client/` - React Native + TypeScript (rider app)
+**Unified Node.js Application** with npm workspaces:
+- `server/` - Node.js + Express + Socket.io backend (serves React app in production)
+- `web-client/` - React + Vite + TypeScript (organizer dashboard, served by server)
+- `RideHive/` - React Native + Expo + TypeScript (rider app, standalone)
 - `shared/` - Shared TypeScript types and constants
+
+**Production**: Single Node.js server serves both API and React frontend
+**Development**: Separate dev servers with Vite proxy for hot reload
 
 ### Key Technologies
 - **Real-time**: Socket.io for live location sharing and user presence
@@ -71,17 +94,28 @@ npm run start           # Start Metro bundler
 
 ## Development Workflow
 
-### Native Development (Recommended)
-1. `npm run dev` - Starts PostgreSQL + Redis in Docker, shows next steps
-2. `npm run start:server` - Start Node.js server natively (:3001)
-3. `npm run start:web` - Start Vite dev server natively (:5173)
+### Unified Development (Recommended)
+1. `npm run dev` - Starts PostgreSQL + Redis + Node.js server + React dev server
+   - Dependencies: PostgreSQL (:15432) + Redis (:16379) in Docker
+   - API Server: Node.js (:3001) with hot reload via nodemon
+   - Web Client: Vite dev server (:5173) with proxy to API server
+   - All services start automatically with proper sequencing
+
+### Manual Development (Advanced)
+1. `npm run dev:deps` - Start only PostgreSQL + Redis in Docker
+2. `npm run dev:server` - Start Node.js server (:3001) with hot reload
+3. `npm run dev:web` - Start Vite dev server (:5173) with API proxy
 
 ### Key Endpoints
-- Web Client: http://localhost:5173 (login: password `admin123`)
-- Server API: http://localhost:3001
-- API Docs: http://localhost:3001/api-docs (Swagger)
-- PostgreSQL: localhost:5432 (Docker)
-- Redis: localhost:6379 (Docker)
+- **Development**:
+  - Web Client: http://localhost:5173 (login: password `admin123`)
+  - Server API: http://localhost:3001
+  - API Docs: http://localhost:3001/api-docs (Swagger)
+  - PostgreSQL: localhost:15432 (Docker)
+  - Redis: localhost:16379 (Docker)
+- **Production**:
+  - Unified App: http://localhost:3001 (both web client and API)
+  - API Docs: http://localhost:3001/api-docs
 
 ### Database Schema
 - `maps` - Route definitions with JSONB waypoints array
@@ -126,3 +160,46 @@ npm run lint    # Lint all projects
 ```
 
 Web client uses ESLint with React TypeScript configuration. Server currently has minimal linting setup.
+
+## Production Deployment
+
+RideHive uses automated CI/CD deployment to Heroku via GitHub Actions:
+
+- **Automatic Deployment**: Every push to `main` branch triggers deployment
+- **Unified Application**: Single Node.js server serves both API and React web client
+- **Database**: PostgreSQL with automatic migrations
+- **Monitoring**: Health checks and error reporting
+
+For detailed deployment instructions, see [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md)
+
+### Quick Deployment Setup
+1. Create Heroku app with PostgreSQL add-on
+2. Set GitHub secrets: `HEROKU_API_KEY`, `HEROKU_APP_NAME`, `HEROKU_EMAIL`
+3. Push to `main` branch → automatic deployment
+4. App available at: `https://your-app-name.herokuapp.com`
+
+## Troubleshooting
+
+### PowerShell Console Issues
+If your PowerShell console becomes unresponsive or broken after pressing Ctrl+C:
+
+```bash
+npm run dev:cleanup     # Automatic console cleanup script
+```
+
+Or manually run:
+```powershell
+# In a new PowerShell window
+powershell -ExecutionPolicy Bypass -File scripts/cleanup-console.ps1
+```
+
+**Common symptoms:**
+- Console doesn't respond to input
+- Cursor missing or blinking incorrectly  
+- Colors are wrong
+- Prompts don't appear
+
+**Prevention tips:**
+- Use `npm run dev:deps:stop` to cleanly stop services
+- Avoid force-killing PowerShell windows
+- Close development processes before closing terminal

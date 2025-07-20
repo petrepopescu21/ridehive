@@ -5,27 +5,49 @@ const session = require('express-session');
 const cors = require('cors');
 const swaggerJsdoc = require('swagger-jsdoc');
 const swaggerUi = require('swagger-ui-express');
+const path = require('path');
 require('dotenv').config();
 
 const authRoutes = require('./routes/auth');
 const mapsRoutes = require('./routes/maps');
 const { router: ridesRoutes, activeUsers, updateUserLocation } = require('./routes/rides');
+const routingRoutes = require('./routes/routing');
 
 const app = express();
 const server = http.createServer(app);
 const allowedOrigins = process.env.NODE_ENV === 'production' 
-  ? ["https://ridehive-app.netlify.app", "https://ridehive-app-d5258a8e7e80.herokuapp.com"]
-  : ["http://localhost:3000", "http://localhost:5173"];
+  ? [BASE_URL]
+  : ["http://localhost:3000", "http://localhost:5173", "http://localhost:3001"];
+
+// CORS origin function for development
+const corsOriginFunction = (origin, callback) => {
+  // Allow requests with no origin (like mobile apps or curl requests)
+  if (!origin) return callback(null, true);
+  
+  if (process.env.NODE_ENV === 'production') {
+    if (allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+    return callback(new Error('Not allowed by CORS'));
+  } else {
+    // In development, allow any localhost origin
+    if (origin.startsWith('http://localhost:') || allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+    return callback(new Error('Not allowed by CORS'));
+  }
+};
 
 const io = socketIo(server, {
   cors: {
-    origin: allowedOrigins,
+    origin: corsOriginFunction,
     methods: ["GET", "POST"],
     credentials: true
   }
 });
 
 const PORT = process.env.PORT || 3001;
+const BASE_URL = process.env.BASE_URL || `http://localhost:${PORT}`;
 const SESSION_SECRET = process.env.SESSION_SECRET || 'your-super-secret-session-key';
 
 // Swagger configuration
@@ -40,7 +62,7 @@ const swaggerOptions = {
     servers: [
       {
         url: process.env.NODE_ENV === 'production' 
-          ? 'https://ridehive-app-d5258a8e7e80.herokuapp.com'
+          ? BASE_URL
           : `http://localhost:${PORT}`,
         description: process.env.NODE_ENV === 'production' ? 'Production server' : 'Development server',
       },
@@ -53,7 +75,7 @@ const specs = swaggerJsdoc(swaggerOptions);
 
 // Middleware
 app.use(cors({
-  origin: allowedOrigins,
+  origin: corsOriginFunction,
   credentials: true
 }));
 
@@ -86,11 +108,50 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(specs));
 app.use('/api/auth', authRoutes);
 app.use('/api/maps', mapsRoutes);
 app.use('/api/rides', ridesRoutes);
+app.use('/api/routing', routingRoutes);
 
 // Health check
 app.get('/health', (req, res) => {
   res.json({ status: 'OK', timestamp: new Date().toISOString() });
 });
+
+// Serve static files from React build (production only)
+if (process.env.NODE_ENV === 'production') {
+  // Serve static assets
+  app.use(express.static(path.join(__dirname, '../web-client/dist')));
+  
+  // Catch-all handler: send back React's index.html file for client-side routing
+  app.get('*', (req, res, next) => {
+    // Skip API routes and known endpoints
+    if (req.path.startsWith('/api') || 
+        req.path.startsWith('/health') || 
+        req.path.startsWith('/api-docs')) {
+      return next();
+    }
+    
+    res.sendFile(path.join(__dirname, '../web-client/dist/index.html'));
+  });
+}
+
+// Scheduled snapshot broadcasting
+const SNAPSHOT_BROADCAST_INTERVAL = 2000; // 2 seconds
+
+const broadcastSnapshots = () => {
+  activeUsers.forEach((users, rideId) => {
+    if (users.size === 0) return;
+    
+    const snapshot = {};
+    users.forEach((userData, userId) => {
+      snapshot[userId] = userData;
+    });
+    
+    console.log(`📡 Broadcasting snapshot for ride ${rideId} to ${users.size} users`);
+    io.to(`ride-${rideId}`).emit('user-snapshot', snapshot);
+  });
+};
+
+// Start the snapshot broadcasting timer
+const snapshotTimer = setInterval(broadcastSnapshots, SNAPSHOT_BROADCAST_INTERVAL);
 
 // Socket.io real-time functionality
 io.on('connection', (socket) => {
@@ -112,14 +173,29 @@ io.on('connection', (socket) => {
     socket.rideId = rideId;
     socket.userId = userId;
     
-    // Send current user snapshot to the new user
-    const users = activeUsers.get(parseInt(rideId)) || new Map();
-    const userSnapshot = {};
-    users.forEach((userData, uid) => {
-      userSnapshot[uid] = userData;
-    });
+    // Ensure the user exists in activeUsers (they might have been added via API)
+    if (!activeUsers.has(parseInt(rideId))) {
+      activeUsers.set(parseInt(rideId), new Map());
+    }
     
-    socket.emit('user-snapshot', userSnapshot);
+    const users = activeUsers.get(parseInt(rideId));
+    if (!users.has(userId)) {
+      // Add user if they don't exist (fallback)
+      users.set(userId, {
+        role: 'rider', // Will be updated when they send location
+        lat: null,
+        lng: null,
+        lastSeen: new Date().toISOString(),
+        connectedAt: new Date().toISOString()
+      });
+    } else {
+      // Update last seen for existing user
+      const userData = users.get(userId);
+      userData.lastSeen = new Date().toISOString();
+    }
+    
+    // Note: User snapshot will be sent via scheduled broadcast
+    console.log(`✅ User ${userId} added to ride ${rideId}. Next snapshot in ${SNAPSHOT_BROADCAST_INTERVAL}ms`);
     
     // Notify other users that someone joined
     socket.to(`ride-${rideId}`).emit('user-joined', {
@@ -139,22 +215,16 @@ io.on('connection', (socket) => {
       return;
     }
     
-    // Update user location in memory
-    const success = updateUserLocation(parseInt(rideId), userId, lat, lng);
+    // Update user location in memory (no immediate broadcast)
+    const success = updateUserLocation(parseInt(rideId), userId, lat, lng, role);
     
     if (!success) {
       socket.emit('error', { message: 'Failed to update location' });
       return;
     }
     
-    // Broadcast location to all users in the ride
-    socket.to(`ride-${rideId}`).emit('location-broadcast', {
-      userId,
-      lat,
-      lng,
-      role,
-      timestamp: Date.now()
-    });
+    console.log(`📍 Updated location for ${userId} in ride ${rideId}: ${lat.toFixed(4)}, ${lng.toFixed(4)}`);
+    // Note: Location will be broadcast in the next scheduled snapshot
   });
   
   // Handle disconnection
@@ -213,4 +283,22 @@ server.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
   console.log(`API Documentation available at http://localhost:${PORT}/api-docs`);
   console.log(`Health check at http://localhost:${PORT}/health`);
+  console.log(`📡 Snapshot broadcast interval: ${SNAPSHOT_BROADCAST_INTERVAL}ms`);
+});
+
+// Graceful shutdown
+process.on('SIGTERM', () => {
+  console.log('SIGTERM received, shutting down gracefully');
+  clearInterval(snapshotTimer);
+  server.close(() => {
+    console.log('Server closed');
+  });
+});
+
+process.on('SIGINT', () => {
+  console.log('SIGINT received, shutting down gracefully');
+  clearInterval(snapshotTimer);
+  server.close(() => {
+    console.log('Server closed');
+  });
 });

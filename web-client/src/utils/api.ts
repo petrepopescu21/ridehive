@@ -6,7 +6,8 @@ import type {
   Map, 
   Ride, 
   RideWithUsers,
-  Waypoint 
+  Waypoint,
+  RouteCoordinate
 } from '../../../shared/types';
 
 const api = axios.create({
@@ -60,12 +61,12 @@ export const mapsAPI = {
     return response.data;
   },
 
-  async create(data: { title: string; notes?: string; waypoints: Waypoint[] }): Promise<Map> {
+  async create(data: { title: string; notes?: string; waypoints: Waypoint[]; route_coordinates?: RouteCoordinate[] }): Promise<Map> {
     const response = await api.post(ENDPOINTS.MAPS.BASE, data);
     return response.data;
   },
 
-  async update(id: number, data: { title: string; notes?: string; waypoints: Waypoint[] }): Promise<Map> {
+  async update(id: number, data: { title: string; notes?: string; waypoints: Waypoint[]; route_coordinates?: RouteCoordinate[] }): Promise<Map> {
     const response = await api.put(ENDPOINTS.MAPS.BY_ID(id), data);
     return response.data;
   },
@@ -76,6 +77,11 @@ export const mapsAPI = {
 };
 
 export const ridesAPI = {
+  async getAll(): Promise<(Ride & { activeUserCount: number })[]> {
+    const response = await api.get(ENDPOINTS.RIDES.BASE);
+    return response.data;
+  },
+
   async start(mapId: number): Promise<Ride & { userId: string }> {
     const response = await api.post(ENDPOINTS.RIDES.BASE, { mapId });
     return response.data;

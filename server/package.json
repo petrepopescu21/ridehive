@@ -15,19 +15,26 @@
     "npm": ">=9.0.0"
   },
   "dependencies": {
-    "express": "^4.18.2",
-    "socket.io": "^4.7.2",
-    "pg": "^8.11.3",
-    "express-session": "^1.17.3",
+    "@mapbox/polyline": "^1.2.1",
     "cors": "^2.8.5",
     "dotenv": "^16.3.1",
+    "express": "^4.18.2",
+    "express-session": "^1.17.3",
+    "node-fetch": "^2.7.0",
+    "pg": "^8.11.3",
+    "socket.io": "^4.7.2",
     "swagger-jsdoc": "^6.2.8",
     "swagger-ui-express": "^5.0.0"
   },
   "devDependencies": {
     "nodemon": "^3.0.1"
   },
-  "keywords": ["ride-sharing", "real-time", "socket.io", "express"],
+  "keywords": [
+    "ride-sharing",
+    "real-time",
+    "socket.io",
+    "express"
+  ],
   "author": "",
   "license": "MIT"
 }

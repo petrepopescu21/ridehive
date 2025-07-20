@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { MapEditor as MapEditorComponent } from '../components/map/MapEditor';
 import { WaypointList } from '../components/common/WaypointList';
 import { mapsAPI } from '../utils/api';
-import type { Waypoint } from '../../../shared/types';
+import type { Waypoint, RouteCoordinate } from '../../../shared/types';
 
 interface MapEditorPageProps {
   mapId?: number;
@@ -13,17 +13,12 @@ export const MapEditorPage = ({ mapId, onBack }: MapEditorPageProps) => {
   const [title, setTitle] = useState('');
   const [notes, setNotes] = useState('');
   const [waypoints, setWaypoints] = useState<Waypoint[]>([]);
+  const [routeCoordinates, setRouteCoordinates] = useState<RouteCoordinate[]>([]);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const isEditing = !!mapId;
-
-  useEffect(() => {
-    if (mapId) {
-      loadMap();
-    }
-  }, [mapId, loadMap]);
 
   const loadMap = useCallback(async () => {
     if (!mapId) return;
@@ -35,12 +30,19 @@ export const MapEditorPage = ({ mapId, onBack }: MapEditorPageProps) => {
       setTitle(map.title);
       setNotes(map.notes || '');
       setWaypoints(map.waypoints);
+      setRouteCoordinates(map.route_coordinates || []);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load map');
     } finally {
       setLoading(false);
     }
   }, [mapId]);
+
+  useEffect(() => {
+    if (mapId) {
+      loadMap();
+    }
+  }, [mapId, loadMap]);
 
   const handleSave = async () => {
     if (!title.trim()) {
@@ -56,6 +58,7 @@ export const MapEditorPage = ({ mapId, onBack }: MapEditorPageProps) => {
         title: title.trim(),
         notes: notes.trim(),
         waypoints,
+        route_coordinates: routeCoordinates,
       };
 
       if (isEditing && mapId) {
@@ -204,6 +207,8 @@ export const MapEditorPage = ({ mapId, onBack }: MapEditorPageProps) => {
               <MapEditorComponent
                 waypoints={waypoints}
                 onWaypointsChange={setWaypoints}
+                routeCoordinates={routeCoordinates}
+                onRouteChange={setRouteCoordinates}
               />
             </div>
           </div>

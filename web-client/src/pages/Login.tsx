@@ -1,11 +1,7 @@
 import { useState } from 'react';
 import { useAuth } from '../hooks/useAuth';
 
-interface LoginProps {
-  onLoginSuccess: () => void;
-}
-
-export const Login = ({ onLoginSuccess }: LoginProps) => {
+export const Login = () => {
   const [password, setPassword] = useState('');
   const { login, loading, error } = useAuth();
 
@@ -17,8 +13,14 @@ export const Login = ({ onLoginSuccess }: LoginProps) => {
     
     try {
       await login(password);
-      console.log('✅ Login successful, calling onLoginSuccess');
-      onLoginSuccess();
+      console.log('✅ Login successful, attempting manual redirect');
+      
+      // Manual redirect as backup
+      setTimeout(() => {
+        console.log('🔄 Manual redirect timeout triggered');
+        window.location.href = '/dashboard';
+      }, 100);
+      
     } catch (err) {
       console.error('❌ Login failed in form:', err);
       // Error is handled by useAuth hook

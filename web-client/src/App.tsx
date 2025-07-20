@@ -60,10 +60,10 @@ const updateURL = (state: AppState) => {
 };
 
 function App() {
-  const { isAuthenticated, loading } = useAuth();
+  const { isAuthenticated, loading, authChanged } = useAuth();
   const [appState, setAppState] = useState<AppState>(() => getInitialStateFromURL());
 
-  console.log('🔄 App render - Auth state:', { isAuthenticated, loading, view: appState.view });
+  console.log('🔄 App render - Auth state:', { isAuthenticated, loading, authChanged, view: appState.view });
 
   // Navigation function that updates both state and URL
   const navigateToState = (newState: AppState) => {
@@ -87,19 +87,20 @@ function App() {
     updateURL(appState);
   }, [appState]);
 
-  // Update app state based on authentication
+  // Simple authentication redirect logic
   useEffect(() => {
-    console.log('🔄 Auth effect triggered:', { isAuthenticated, loading, currentView: appState.view });
+    console.log('🔄 Auth effect:', { isAuthenticated, loading, authChanged, currentView: appState.view });
+    
     if (!loading) {
       if (isAuthenticated && appState.view === 'login') {
-        console.log('✅ User authenticated, switching to dashboard');
+        console.log('✅ Authenticated user on login page, redirecting to dashboard');
         navigateToState({ view: 'dashboard' });
       } else if (!isAuthenticated && appState.view !== 'login') {
-        console.log('❌ User not authenticated, switching to login');
+        console.log('❌ Unauthenticated user not on login page, redirecting to login');
         navigateToState({ view: 'login' });
       }
     }
-  }, [isAuthenticated, loading, appState.view]);
+  }, [isAuthenticated, loading, appState.view, authChanged]);
 
   if (loading) {
     console.log('🔄 Rendering loading state');
@@ -115,11 +116,7 @@ function App() {
 
   if (!isAuthenticated) {
     console.log('🔐 Rendering login page');
-    return (
-      <Login 
-        onLoginSuccess={() => navigateToState({ view: 'dashboard' })} 
-      />
-    );
+    return <Login />;
   }
 
   switch (appState.view) {
@@ -130,6 +127,7 @@ function App() {
           onCreateMap={() => navigateToState({ view: 'map-editor' })}
           onEditMap={(mapId) => navigateToState({ view: 'map-editor', mapId })}
           onStartRide={(rideId) => navigateToState({ view: 'active-ride', rideId })}
+          onOpenRide={(rideId) => navigateToState({ view: 'active-ride', rideId })}
         />
       );
     
@@ -158,6 +156,7 @@ function App() {
           onCreateMap={() => navigateToState({ view: 'map-editor' })}
           onEditMap={(mapId) => navigateToState({ view: 'map-editor', mapId })}
           onStartRide={(rideId) => navigateToState({ view: 'active-ride', rideId })}
+          onOpenRide={(rideId) => navigateToState({ view: 'active-ride', rideId })}
         />
       );
   }

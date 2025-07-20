@@ -97,9 +97,13 @@ export const useGeolocation = (options: UseGeolocationOptions = {}) => {
       return;
     }
 
-    if (watchId !== null) {
-      navigator.geolocation.clearWatch(watchId);
-    }
+    // Clear any existing watch
+    setWatchId(prevWatchId => {
+      if (prevWatchId !== null) {
+        navigator.geolocation.clearWatch(prevWatchId);
+      }
+      return null;
+    });
 
     setState(prev => ({ ...prev, loading: true, error: null }));
 
@@ -114,14 +118,16 @@ export const useGeolocation = (options: UseGeolocationOptions = {}) => {
     );
 
     setWatchId(id);
-  }, [enableHighAccuracy, timeout, maximumAge, updatePosition, updateError, watchId]);
+  }, [enableHighAccuracy, timeout, maximumAge, updatePosition, updateError]);
 
   const stopWatching = useCallback(() => {
-    if (watchId !== null) {
-      navigator.geolocation.clearWatch(watchId);
-      setWatchId(null);
-    }
-  }, [watchId]);
+    setWatchId(prevWatchId => {
+      if (prevWatchId !== null) {
+        navigator.geolocation.clearWatch(prevWatchId);
+      }
+      return null;
+    });
+  }, []);
 
   useEffect(() => {
     if (watchPosition) {

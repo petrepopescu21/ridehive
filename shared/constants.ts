@@ -1,4 +1,7 @@
-export const API_BASE_URL = 'http://localhost:3001';
+// API base URL - for web client (empty = relative URLs), for mobile (explicit URL)
+export const API_BASE_URL = typeof window !== 'undefined' 
+  ? '' // Web client: use relative URLs (proxy in dev, same origin in prod)
+  : 'http://localhost:3001'; // Mobile/Node: use explicit URL
 
 export const ENDPOINTS = {
   AUTH: {

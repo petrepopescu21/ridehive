@@ -39,7 +39,7 @@ router.post('/organizer', (req, res) => {
   req.session.userId = generateUserId();
   
   res.json({ 
-    message: 'Login successful',
+    message: 'Login successful!',
     userId: req.session.userId
   });
 });

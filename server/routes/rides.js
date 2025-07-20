@@ -39,22 +39,34 @@ router.post('/', requireAuth, async (req, res) => {
       return res.status(404).json({ error: 'Map not found' });
     }
     
-    // Generate unique PIN
-    let pinCode;
-    let pinExists = true;
-    while (pinExists) {
-      pinCode = generatePinCode();
+    // Generate unique rider PIN
+    let riderPin;
+    let riderPinExists = true;
+    while (riderPinExists) {
+      riderPin = generatePinCode();
       const existingPin = await query(
-        'SELECT id FROM rides WHERE pin_code = $1 AND status = $2',
-        [pinCode, 'active']
+        'SELECT id FROM rides WHERE rider_pin = $1 AND status = $2',
+        [riderPin, 'active']
       );
-      pinExists = existingPin.rows.length > 0;
+      riderPinExists = existingPin.rows.length > 0;
+    }
+    
+    // Generate unique organizer PIN
+    let organizerPin;
+    let organizerPinExists = true;
+    while (organizerPinExists) {
+      organizerPin = generatePinCode();
+      const existingPin = await query(
+        'SELECT id FROM rides WHERE organizer_pin = $1 AND status = $2',
+        [organizerPin, 'active']
+      );
+      organizerPinExists = existingPin.rows.length > 0;
     }
     
     // Create ride
     const result = await query(
-      'INSERT INTO rides (map_id, pin_code) VALUES ($1, $2) RETURNING id, map_id, pin_code, status, started_at',
-      [mapId, pinCode]
+      'INSERT INTO rides (map_id, rider_pin, organizer_pin) VALUES ($1, $2, $3) RETURNING id, map_id, rider_pin, organizer_pin, status, started_at',
+      [mapId, riderPin, organizerPin]
     );
     
     const ride = result.rows[0];
@@ -113,9 +125,9 @@ router.post('/join', async (req, res) => {
       return res.status(400).json({ error: 'PIN code is required' });
     }
     
-    // Find active ride with PIN
+    // Find active ride with PIN (check both rider and organizer PINs)
     const result = await query(
-      'SELECT r.id, r.map_id, r.pin_code, r.status, r.started_at, m.title, m.notes, m.waypoints FROM rides r JOIN maps m ON r.map_id = m.id WHERE r.pin_code = $1 AND r.status = $2',
+      'SELECT r.id, r.map_id, r.rider_pin, r.organizer_pin, r.status, r.started_at, m.title, m.notes, m.waypoints, m.route_coordinates FROM rides r JOIN maps m ON r.map_id = m.id WHERE (r.rider_pin = $1 OR r.organizer_pin = $1) AND r.status = $2',
       [pinCode, 'active']
     );
     
@@ -125,7 +137,10 @@ router.post('/join', async (req, res) => {
     
     const ride = result.rows[0];
     
-    // Generate user ID for rider
+    // Determine role based on which PIN was used
+    const role = pinCode === ride.organizer_pin ? 'organizer' : 'rider';
+    
+    // Generate user ID
     const userId = generateUserId();
     
     // Initialize active users map if not exists
@@ -133,16 +148,16 @@ router.post('/join', async (req, res) => {
       activeUsers.set(ride.id, new Map());
     }
     
-    // Add rider to active users
-    const riderData = {
-      role: 'rider',
+    // Add user to active users
+    const userData = {
+      role: role,
       lat: null,
       lng: null,
       lastSeen: new Date().toISOString(),
       connectedAt: new Date().toISOString()
     };
     
-    activeUsers.get(ride.id).set(userId, riderData);
+    activeUsers.get(ride.id).set(userId, userData);
     
     res.json({
       ...ride,
@@ -151,6 +166,40 @@ router.post('/join', async (req, res) => {
   } catch (error) {
     console.error('Error joining ride:', error);
     res.status(500).json({ error: 'Failed to join ride' });
+  }
+});
+
+/**
+ * @swagger
+ * /api/rides:
+ *   get:
+ *     summary: Get all active rides (organizer only)
+ *     tags: [Rides]
+ *     responses:
+ *       200:
+ *         description: List of active rides
+ */
+router.get('/', requireAuth, async (req, res) => {
+  try {
+    const result = await query(
+      'SELECT r.id, r.map_id, r.rider_pin, r.organizer_pin, r.status, r.started_at, m.title, m.notes FROM rides r JOIN maps m ON r.map_id = m.id WHERE r.status = $1 ORDER BY r.started_at DESC',
+      ['active']
+    );
+    
+    const ridesWithUsers = result.rows.map(ride => {
+      const users = activeUsers.get(ride.id) || new Map();
+      const activeUserCount = users.size;
+      
+      return {
+        ...ride,
+        activeUserCount
+      };
+    });
+    
+    res.json(ridesWithUsers);
+  } catch (error) {
+    console.error('Error fetching active rides:', error);
+    res.status(500).json({ error: 'Failed to fetch active rides' });
   }
 });
 
@@ -177,7 +226,7 @@ router.get('/:id', async (req, res) => {
     const { id } = req.params;
     
     const result = await query(
-      'SELECT r.id, r.map_id, r.pin_code, r.status, r.started_at, r.ended_at, m.title, m.notes, m.waypoints FROM rides r JOIN maps m ON r.map_id = m.id WHERE r.id = $1',
+      'SELECT r.id, r.map_id, r.rider_pin, r.organizer_pin, r.status, r.started_at, r.ended_at, m.title, m.notes, m.waypoints, m.route_coordinates FROM rides r JOIN maps m ON r.map_id = m.id WHERE r.id = $1',
       [id]
     );
     
@@ -249,7 +298,7 @@ router.post('/:id/end', requireAuth, async (req, res) => {
 });
 
 // Helper function to update user location
-const updateUserLocation = (rideId, userId, lat, lng) => {
+const updateUserLocation = (rideId, userId, lat, lng, role = null) => {
   if (!activeUsers.has(rideId)) {
     return false;
   }
@@ -263,6 +312,11 @@ const updateUserLocation = (rideId, userId, lat, lng) => {
   userData.lat = lat;
   userData.lng = lng;
   userData.lastSeen = new Date().toISOString();
+  
+  // Update role if provided
+  if (role) {
+    userData.role = role;
+  }
   
   return true;
 };

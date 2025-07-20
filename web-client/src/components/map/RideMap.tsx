@@ -3,30 +3,25 @@ import { MapContainer, TileLayer, Marker, Popup, Polyline } from 'react-leaflet'
 import { Icon } from 'leaflet';
 import * as L from 'leaflet';
 import { DEFAULT_MAP_CENTER, MAP_ZOOM_LEVELS, USER_COLORS } from '../../../../shared/constants';
-import type { Waypoint, ActiveUser } from '../../../../shared/types';
+import type { Waypoint, ActiveUser, RouteCoordinate } from '../../../../shared/types';
 
-// Custom icons for different user types (created once to prevent memory leaks)
-const organizerIcon = new Icon({
-  iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
-  iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',
-  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
-  iconSize: [25, 41],
-  iconAnchor: [12, 41],
-  popupAnchor: [1, -34],
-  shadowSize: [41, 41],
-  className: 'organizer-marker'
-});
+// Custom circle icons for different user types
+const createCircleIcon = (color: string, size: number = 12) => {
+  return new Icon({
+    iconUrl: `data:image/svg+xml;base64,${btoa(`
+      <svg xmlns="http://www.w3.org/2000/svg" width="${size * 2}" height="${size * 2}" viewBox="0 0 ${size * 2} ${size * 2}">
+        <circle cx="${size}" cy="${size}" r="${size - 2}" fill="${color}" stroke="white" stroke-width="2"/>
+      </svg>
+    `)}`,
+    iconSize: [size * 2, size * 2],
+    iconAnchor: [size, size],
+    popupAnchor: [0, -size],
+    className: 'circle-marker'
+  });
+};
 
-const riderIcon = new Icon({
-  iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
-  iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',
-  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
-  iconSize: [20, 33],
-  iconAnchor: [10, 33],
-  popupAnchor: [1, -28],
-  shadowSize: [33, 33],
-  className: 'rider-marker'
-});
+const organizerIcon = createCircleIcon('#dc2626', 10); // Red circle for organizer
+const riderIcon = createCircleIcon('#2563eb', 8);      // Blue circle for rider
 
 const waypointIcon = new Icon({
   iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
@@ -42,10 +37,11 @@ const waypointIcon = new Icon({
 interface RideMapProps {
   waypoints: Waypoint[];
   activeUsers: { [userId: string]: ActiveUser };
+  routeCoordinates?: RouteCoordinate[];
   center?: { lat: number; lng: number };
 }
 
-export const RideMap = ({ waypoints, activeUsers, center }: RideMapProps) => {
+export const RideMap = ({ waypoints, activeUsers, routeCoordinates = [], center }: RideMapProps) => {
   const mapRef = useRef<L.Map | null>(null);
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
 
@@ -109,7 +105,10 @@ export const RideMap = ({ waypoints, activeUsers, center }: RideMapProps) => {
   }, [waypoints, activeUsers]);
 
   // Get route polyline points
-  const routePoints: [number, number][] = waypoints.map(wp => [wp.lat, wp.lng]);
+  // Use saved route coordinates if available, otherwise connect waypoints directly
+  const routePoints: [number, number][] = routeCoordinates.length > 0 
+    ? routeCoordinates.map(coord => [coord.lat, coord.lng])
+    : waypoints.map(wp => [wp.lat, wp.lng]);
 
   return (
     <div className="h-full w-full relative">

@@ -7,11 +7,13 @@ interface DashboardProps {
   onCreateMap: () => void;
   onEditMap: (mapId: number) => void;
   onStartRide: (rideId: number) => void;
+  onOpenRide?: (rideId: number) => void;
 }
 
-export const Dashboard = ({ onCreateMap, onEditMap, onStartRide }: DashboardProps) => {
+export const Dashboard = ({ onCreateMap, onEditMap, onStartRide, onOpenRide }: DashboardProps) => {
   const { logout } = useAuth();
   const [maps, setMaps] = useState<Map[]>([]);
+  const [activeRides, setActiveRides] = useState<(import('../../../shared/types').Ride & { activeUserCount: number })[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [startingRide, setStartingRide] = useState<number | null>(null);
@@ -20,10 +22,14 @@ export const Dashboard = ({ onCreateMap, onEditMap, onStartRide }: DashboardProp
     try {
       setLoading(true);
       setError(null);
-      const data = await mapsAPI.getAll();
-      setMaps(data);
+      const [mapsData, ridesData] = await Promise.all([
+        mapsAPI.getAll(),
+        ridesAPI.getAll()
+      ]);
+      setMaps(mapsData);
+      setActiveRides(ridesData);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load maps');
+      setError(err instanceof Error ? err.message : 'Failed to load data');
     } finally {
       setLoading(false);
     }
@@ -93,6 +99,43 @@ export const Dashboard = ({ onCreateMap, onEditMap, onStartRide }: DashboardProp
         {error && (
           <div className="mb-4 bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-md">
             {error}
+          </div>
+        )}
+
+        {/* Active Rides Section */}
+        {activeRides.length > 0 && (
+          <div className="px-4 py-6 sm:px-0">
+            <h2 className="text-lg font-medium text-gray-900 mb-6">Active Rides</h2>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 mb-8">
+              {activeRides.map((ride) => (
+                <div key={ride.id} className="bg-green-50 border border-green-200 overflow-hidden shadow rounded-lg">
+                  <div className="p-6">
+                    <div className="flex items-center justify-between mb-4">
+                      <h3 className="text-lg font-medium text-gray-900">{ride.title}</h3>
+                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                        Live
+                      </span>
+                    </div>
+                    
+                    <div className="text-sm text-gray-600 mb-4">
+                      <p>Rider PIN: <span className="font-mono font-bold text-lg bg-blue-100 px-2 py-1 rounded">{ride.rider_pin}</span></p>
+                      <p>Organizer PIN: <span className="font-mono font-bold text-lg bg-green-100 px-2 py-1 rounded">{ride.organizer_pin}</span></p>
+                      <p>Started: {new Date(ride.started_at).toLocaleString()}</p>
+                      <p>Active users: {ride.activeUserCount}</p>
+                    </div>
+                    
+                    <div className="flex space-x-2">
+                      <button
+                        onClick={() => onOpenRide ? onOpenRide(ride.id) : onStartRide(ride.id)}
+                        className="flex-1 bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded-md text-sm font-medium"
+                      >
+                        Open Ride
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         )}
 

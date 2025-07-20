@@ -9,6 +9,7 @@ export const useAuth = () => {
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [authChanged, setAuthChanged] = useState(0);
 
   const checkAuthStatus = async () => {
     try {
@@ -32,14 +33,19 @@ export const useAuth = () => {
       setLoading(true);
       setError(null);
       const result = await authAPI.login(password);
+      console.log('🔐 Setting auth status to authenticated');
       setAuthStatus({ isAuthenticated: true, userId: result.userId });
+      setAuthChanged(prev => {
+        console.log('🔄 Incrementing authChanged from', prev, 'to', prev + 1);
+        return prev + 1;
+      });
+      setLoading(false);
       return result;
     } catch (err) {
       const errorMsg = err instanceof Error ? err.message : 'Login failed';
       setError(errorMsg);
-      throw new Error(errorMsg);
-    } finally {
       setLoading(false);
+      throw new Error(errorMsg);
     }
   };
 
@@ -48,10 +54,12 @@ export const useAuth = () => {
       setLoading(true);
       setError(null);
       await authAPI.logout();
+      console.log('🔐 Setting auth status to unauthenticated');
       setAuthStatus({ isAuthenticated: false, userId: null });
+      setAuthChanged(prev => prev + 1);
+      setLoading(false);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Logout failed');
-    } finally {
       setLoading(false);
     }
   };
@@ -67,5 +75,6 @@ export const useAuth = () => {
     login,
     logout,
     checkAuthStatus,
+    authChanged,
   };
 };

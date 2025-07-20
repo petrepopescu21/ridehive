@@ -1,11 +1,14 @@
 import { useState, useCallback, useEffect } from 'react';
-import { MapContainer, TileLayer, Marker, Popup, useMapEvents } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Popup, Polyline, useMapEvents } from 'react-leaflet';
 import { Icon } from 'leaflet';
+import * as L from 'leaflet';
 import { DEFAULT_MAP_CENTER, MAP_ZOOM_LEVELS } from '../../../../shared/constants';
-import type { Waypoint } from '../../../../shared/types';
+import type { Waypoint, RouteCoordinate } from '../../../../shared/types';
+import { calculateRouteWithFallback } from '../../utils/routingService';
 
 // Fix for default markers
-delete (Icon.Default.prototype as Record<string, unknown>)._getIconUrl;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+delete (Icon.Default.prototype as any)._getIconUrl;
 Icon.Default.mergeOptions({
   iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',
   iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
@@ -15,6 +18,8 @@ Icon.Default.mergeOptions({
 interface MapEditorProps {
   waypoints: Waypoint[];
   onWaypointsChange: (waypoints: Waypoint[]) => void;
+  routeCoordinates?: RouteCoordinate[];
+  onRouteChange?: (routeCoordinates: RouteCoordinate[]) => void;
   readonly?: boolean;
 }
 
@@ -27,7 +32,13 @@ const MapClickHandler = ({ onMapClick }: { onMapClick: (lat: number, lng: number
   return null;
 };
 
-export const MapEditor = ({ waypoints, onWaypointsChange, readonly = false }: MapEditorProps) => {
+export const MapEditor = ({ 
+  waypoints, 
+  onWaypointsChange, 
+  routeCoordinates = [], 
+  onRouteChange,
+  readonly = false 
+}: MapEditorProps) => {
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const [editingName, setEditingName] = useState('');
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
@@ -57,7 +68,8 @@ export const MapEditor = ({ waypoints, onWaypointsChange, readonly = false }: Ma
       lng,
       name: `Waypoint ${waypoints.length + 1}`,
     };
-    onWaypointsChange([...waypoints, newWaypoint]);
+    const newWaypoints = [...waypoints, newWaypoint];
+    onWaypointsChange(newWaypoints);
   }, [waypoints, onWaypointsChange, readonly]);
 
   const handleWaypointNameChange = (index: number, newName: string) => {
@@ -73,6 +85,19 @@ export const MapEditor = ({ waypoints, onWaypointsChange, readonly = false }: Ma
     onWaypointsChange(updated);
   };
 
+  const handleMarkerDragEnd = (index: number, event: L.DragEndEvent) => {
+    if (readonly) return;
+    
+    const newPosition = event.target.getLatLng();
+    const updated = [...waypoints];
+    updated[index] = {
+      ...updated[index],
+      lat: newPosition.lat,
+      lng: newPosition.lng,
+    };
+    onWaypointsChange(updated);
+  };
+
   const startEditing = (index: number, currentName: string) => {
     setEditingIndex(index);
     setEditingName(currentName);
@@ -83,18 +108,62 @@ export const MapEditor = ({ waypoints, onWaypointsChange, readonly = false }: Ma
     setEditingName('');
   };
 
-  // Calculate map center based on waypoints, user location, or default
-  const mapCenter = waypoints.length > 0 
-    ? {
+  // Calculate route between waypoints
+  const handleCalculateRoute = useCallback(async () => {
+    if (waypoints.length < 2) {
+      return;
+    }
+
+    if (!onRouteChange) {
+      console.warn('onRouteChange callback not provided');
+      return;
+    }
+
+    try {
+      const calculatedRoute = await calculateRouteWithFallback(waypoints);
+      onRouteChange(calculatedRoute);
+      
+      console.log('✅ Route calculated successfully');
+    } catch (error) {
+      console.error('❌ Route calculation error:', error);
+    }
+  }, [waypoints, onRouteChange]);
+
+  // Auto-calculate route when waypoints change
+  useEffect(() => {
+    if (readonly) return;
+    if (waypoints.length < 2) {
+      // Clear route if less than 2 waypoints
+      if (routeCoordinates.length > 0 && onRouteChange) {
+        onRouteChange([]);
+      }
+      return;
+    }
+
+    // Auto-calculate route with a small debounce
+    const timeoutId = setTimeout(() => {
+      handleCalculateRoute();
+    }, 500); // 500ms debounce to avoid too many API calls
+
+    return () => clearTimeout(timeoutId);
+  }, [waypoints, readonly, onRouteChange, handleCalculateRoute, routeCoordinates.length]);
+
+  // Use a stable map center - only calculate once or when there are no waypoints
+  const [initialCenter] = useState(() => {
+    if (waypoints.length > 0) {
+      return {
         lat: waypoints.reduce((sum, wp) => sum + wp.lat, 0) / waypoints.length,
         lng: waypoints.reduce((sum, wp) => sum + wp.lng, 0) / waypoints.length,
-      }
-    : userLocation || DEFAULT_MAP_CENTER;
+      };
+    }
+    return userLocation || DEFAULT_MAP_CENTER;
+  });
 
   return (
-    <div className="h-full w-full">
+    <div className="h-full w-full relative">
       <MapContainer
-        center={[mapCenter.lat, mapCenter.lng]}
+        key={`map-${waypoints.length}`}
+        center={[initialCenter.lat, initialCenter.lng]}
         zoom={MAP_ZOOM_LEVELS.DEFAULT}
         className="h-full w-full"
       >
@@ -109,6 +178,10 @@ export const MapEditor = ({ waypoints, onWaypointsChange, readonly = false }: Ma
           <Marker
             key={index}
             position={[waypoint.lat, waypoint.lng]}
+            draggable={!readonly}
+            eventHandlers={{
+              dragend: (event) => handleMarkerDragEnd(index, event),
+            }}
           >
             <Popup>
               <div className="min-w-48">
@@ -165,7 +238,18 @@ export const MapEditor = ({ waypoints, onWaypointsChange, readonly = false }: Ma
             </Popup>
           </Marker>
         ))}
+        
+        {/* Display calculated route */}
+        {routeCoordinates.length > 0 && (
+          <Polyline
+            positions={routeCoordinates.map(coord => [coord.lat, coord.lng])}
+            color="#3b82f6"
+            weight={4}
+            opacity={0.7}
+          />
+        )}
       </MapContainer>
+      
     </div>
   );
 };

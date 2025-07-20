@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RideHive Test Client</title>
+    <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f8f9fa;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+            color: #374151;
+        }
+        input, select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #d1d5db;
+            border-radius: 6px;
+            font-size: 16px;
+        }
+        button {
+            background: #3b82f6;
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 6px;
+            font-size: 16px;
+            cursor: pointer;
+            margin-right: 10px;
+        }
+        button:hover {
+            background: #2563eb;
+        }
+        button:disabled {
+            background: #9ca3af;
+            cursor: not-allowed;
+        }
+        .danger {
+            background: #ef4444;
+        }
+        .danger:hover {
+            background: #dc2626;
+        }
+        .status {
+            padding: 15px;
+            border-radius: 6px;
+            margin: 15px 0;
+            font-weight: 500;
+        }
+        .status.connected {
+            background: #d1fae5;
+            color: #065f46;
+            border: 1px solid #a7f3d0;
+        }
+        .status.disconnected {
+            background: #fee2e2;
+            color: #991b1b;
+            border: 1px solid #fecaca;
+        }
+        .log {
+            background: #f3f4f6;
+            border: 1px solid #d1d5db;
+            border-radius: 6px;
+            padding: 15px;
+            height: 300px;
+            overflow-y: auto;
+            font-family: 'Monaco', 'Consolas', monospace;
+            font-size: 12px;
+            white-space: pre-wrap;
+        }
+        .settings {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        .info {
+            background: #eff6ff;
+            border: 1px solid #bfdbfe;
+            border-radius: 6px;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚗 RideHive Test Client</h1>
+        
+        <div class="info">
+            <strong>Instructions:</strong>
+            <ol>
+                <li>Start a ride from the organizer dashboard</li>
+                <li>Enter the PIN code below</li>
+                <li>Configure location and movement settings</li>
+                <li>Click "Connect & Join Ride" to start sending test data</li>
+            </ol>
+        </div>
+
+        <div class="form-group">
+            <label for="pinCode">Ride PIN Code:</label>
+            <input type="text" id="pinCode" placeholder="Enter 6-digit PIN" maxlength="6">
+        </div>
+
+        <div class="settings">
+            <div class="form-group">
+                <label for="updateInterval">Update Interval (ms):</label>
+                <input type="number" id="updateInterval" value="2000" min="500" max="10000">
+            </div>
+            <div class="form-group">
+                <label for="movementSpeed">Movement Speed:</label>
+                <select id="movementSpeed">
+                    <option value="slow">Slow (Walking)</option>
+                    <option value="medium" selected>Medium (Cycling)</option>
+                    <option value="fast">Fast (Driving)</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="settings">
+            <div class="form-group">
+                <label for="startLat">Starting Latitude:</label>
+                <input type="number" id="startLat" value="44.4268" step="0.0001">
+            </div>
+            <div class="form-group">
+                <label for="startLng">Starting Longitude:</label>
+                <input type="number" id="startLng" value="26.1025" step="0.0001">
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label for="movementPattern">Movement Pattern:</label>
+            <select id="movementPattern">
+                <option value="random">Random Walk</option>
+                <option value="circle">Circular Path</option>
+                <option value="linear">Linear Path</option>
+                <option value="stationary">Stationary</option>
+            </select>
+        </div>
+
+        <button id="connectBtn" onclick="connectToRide()">Connect & Join Ride</button>
+        <button id="disconnectBtn" onclick="disconnect()" disabled class="danger">Disconnect</button>
+
+        <div id="status" class="status disconnected">Disconnected</div>
+
+        <div class="form-group">
+            <label>Activity Log:</label>
+            <div id="log" class="log"></div>
+        </div>
+    </div>
+
+    <script>
+        let socket = null;
+        let rideId = null;
+        let userId = null;
+        let currentLat = 44.4268;
+        let currentLng = 26.1025;
+        let updateTimer = null;
+        let moveAngle = 0;
+        let moveDistance = 0;
+
+        const SOCKET_EVENTS = {
+            JOIN_RIDE: 'join-ride',
+            LOCATION_UPDATE: 'location-update',
+            LOCATION_BROADCAST: 'location-broadcast',
+            USER_SNAPSHOT: 'user-snapshot',
+            USER_JOINED: 'user-joined',
+            USER_LEFT: 'user-left',
+            RIDE_ENDED: 'ride-ended',
+            ERROR: 'error',
+        };
+
+        function log(message) {
+            const timestamp = new Date().toLocaleTimeString();
+            const logElement = document.getElementById('log');
+            logElement.textContent += `[${timestamp}] ${message}\n`;
+            logElement.scrollTop = logElement.scrollHeight;
+        }
+
+        function updateStatus(connected) {
+            const statusElement = document.getElementById('status');
+            const connectBtn = document.getElementById('connectBtn');
+            const disconnectBtn = document.getElementById('disconnectBtn');
+            
+            if (connected) {
+                statusElement.textContent = `Connected to ride ${rideId} as ${userId}`;
+                statusElement.className = 'status connected';
+                connectBtn.disabled = true;
+                disconnectBtn.disabled = false;
+            } else {
+                statusElement.textContent = 'Disconnected';
+                statusElement.className = 'status disconnected';
+                connectBtn.disabled = false;
+                disconnectBtn.disabled = true;
+            }
+        }
+
+        async function connectToRide() {
+            const pinCode = document.getElementById('pinCode').value;
+            if (!pinCode || pinCode.length !== 6) {
+                alert('Please enter a valid 6-digit PIN code');
+                return;
+            }
+
+            try {
+                // Join ride via API
+                log('Joining ride with PIN: ' + pinCode);
+                const response = await fetch('http://localhost:3001/api/rides/join', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ pinCode }),
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to join ride');
+                }
+
+                const rideData = await response.json();
+                rideId = rideData.id;
+                userId = rideData.userId;
+                
+                log(`Successfully joined ride ${rideId} as ${userId}`);
+
+                // Set starting position
+                currentLat = parseFloat(document.getElementById('startLat').value);
+                currentLng = parseFloat(document.getElementById('startLng').value);
+
+                // Connect to socket
+                socket = io('http://localhost:3001');
+
+                socket.on('connect', () => {
+                    log('Connected to socket server');
+                    socket.emit(SOCKET_EVENTS.JOIN_RIDE, { rideId, userId });
+                    updateStatus(true);
+                    startLocationUpdates();
+                });
+
+                socket.on('disconnect', () => {
+                    log('Disconnected from socket server');
+                    updateStatus(false);
+                    stopLocationUpdates();
+                });
+
+                socket.on(SOCKET_EVENTS.USER_SNAPSHOT, (snapshot) => {
+                    log(`Received user snapshot: ${Object.keys(snapshot).length} users`);
+                });
+
+                // Note: Individual location broadcasts removed - using scheduled snapshots only
+
+                socket.on(SOCKET_EVENTS.USER_JOINED, (data) => {
+                    log(`User ${data.userId} joined the ride`);
+                });
+
+                socket.on(SOCKET_EVENTS.USER_LEFT, (data) => {
+                    log(`User ${data.userId} left the ride`);
+                });
+
+                socket.on(SOCKET_EVENTS.RIDE_ENDED, () => {
+                    log('Ride has ended');
+                    disconnect();
+                });
+
+                socket.on(SOCKET_EVENTS.ERROR, (data) => {
+                    log(`Socket error: ${data.message}`);
+                });
+
+            } catch (error) {
+                log(`Error: ${error.message}`);
+                alert('Failed to join ride: ' + error.message);
+            }
+        }
+
+        function disconnect() {
+            if (socket) {
+                socket.disconnect();
+                socket = null;
+            }
+            stopLocationUpdates();
+            updateStatus(false);
+            log('Disconnected from ride');
+        }
+
+        function startLocationUpdates() {
+            const interval = parseInt(document.getElementById('updateInterval').value);
+            updateTimer = setInterval(updateLocation, interval);
+            log(`Started location updates every ${interval}ms`);
+        }
+
+        function stopLocationUpdates() {
+            if (updateTimer) {
+                clearInterval(updateTimer);
+                updateTimer = null;
+                log('Stopped location updates');
+            }
+        }
+
+        function updateLocation() {
+            if (!socket || !rideId || !userId) return;
+
+            // Update position based on movement pattern
+            const pattern = document.getElementById('movementPattern').value;
+            const speed = document.getElementById('movementSpeed').value;
+            
+            // Speed multipliers (degrees per update)
+            const speedMultipliers = {
+                slow: 0.0001,   // ~11m per update
+                medium: 0.0003, // ~33m per update  
+                fast: 0.0008    // ~89m per update
+            };
+
+            const speedMultiplier = speedMultipliers[speed];
+
+            switch (pattern) {
+                case 'random':
+                    // Random walk
+                    currentLat += (Math.random() - 0.5) * speedMultiplier * 2;
+                    currentLng += (Math.random() - 0.5) * speedMultiplier * 2;
+                    break;
+                
+                case 'circle':
+                    // Circular movement
+                    moveAngle += 0.1;
+                    const radius = speedMultiplier * 20;
+                    currentLat = parseFloat(document.getElementById('startLat').value) + Math.sin(moveAngle) * radius;
+                    currentLng = parseFloat(document.getElementById('startLng').value) + Math.cos(moveAngle) * radius;
+                    break;
+                
+                case 'linear':
+                    // Linear movement (north-east direction)
+                    currentLat += speedMultiplier;
+                    currentLng += speedMultiplier * 0.5;
+                    break;
+                
+                case 'stationary':
+                    // Stay in place with small random variations
+                    currentLat += (Math.random() - 0.5) * speedMultiplier * 0.1;
+                    currentLng += (Math.random() - 0.5) * speedMultiplier * 0.1;
+                    break;
+            }
+
+            // Send location update
+            socket.emit(SOCKET_EVENTS.LOCATION_UPDATE, {
+                rideId,
+                userId,
+                lat: currentLat,
+                lng: currentLng,
+                role: 'rider',
+            });
+
+            log(`Sent location: ${currentLat.toFixed(6)}, ${currentLng.toFixed(6)}`);
+        }
+
+        // Initialize with random starting position variation
+        window.onload = function() {
+            log('Test client ready');
+            
+            // Add small random variation to starting position
+            const startLat = 44.4268 + (Math.random() - 0.5) * 0.01;
+            const startLng = 26.1025 + (Math.random() - 0.5) * 0.01;
+            
+            document.getElementById('startLat').value = startLat.toFixed(6);
+            document.getElementById('startLng').value = startLng.toFixed(6);
+        };
+    </script>
+</body>
+</html>

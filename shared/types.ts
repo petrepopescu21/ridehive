@@ -4,11 +4,17 @@ export interface Waypoint {
   name: string;
 }
 
+export interface RouteCoordinate {
+  lat: number;
+  lng: number;
+}
+
 export interface Map {
   id: number;
   title: string;
   notes: string;
   waypoints: Waypoint[];
+  route_coordinates?: RouteCoordinate[];
   created_at: string;
   updated_at: string;
 }
@@ -16,13 +22,15 @@ export interface Map {
 export interface Ride {
   id: number;
   map_id: number;
-  pin_code: string;
+  rider_pin: string;
+  organizer_pin: string;
   status: 'active' | 'ended';
   started_at: string;
   ended_at?: string;
   title?: string;
   notes?: string;
   waypoints?: Waypoint[];
+  route_coordinates?: RouteCoordinate[];
 }
 
 export interface ActiveUser {

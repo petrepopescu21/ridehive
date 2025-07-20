@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { io, Socket } from 'socket.io-client';
 import { API_BASE_URL, SOCKET_EVENTS } from '../../../shared/constants';
-import type { ActiveUser, LocationUpdate } from '../../../shared/types';
+import type { ActiveUser } from '../../../shared/types';
 
 interface UseSocketProps {
   rideId?: number;
@@ -57,17 +57,7 @@ export const useSocket = ({ rideId, userId, enabled = true }: UseSocketProps = {
       });
     });
 
-    socketRef.current.on(SOCKET_EVENTS.LOCATION_BROADCAST, (data: LocationUpdate) => {
-      setActiveUsers(prev => ({
-        ...prev,
-        [data.userId]: {
-          ...prev[data.userId],
-          lat: data.lat,
-          lng: data.lng,
-          lastSeen: new Date().toISOString(),
-        }
-      }));
-    });
+    // Note: Individual location broadcasts removed - using scheduled snapshots only
 
     socketRef.current.on(SOCKET_EVENTS.RIDE_ENDED, () => {
       setActiveUsers({});

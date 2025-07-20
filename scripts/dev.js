@@ -64,8 +64,8 @@ async function startDeps() {
       if (code === 0) {
         log.success('Dependencies started!');
         log.info('Dependencies available at:');
-        console.log('  🗄️ PostgreSQL: localhost:5432');
-        console.log('  🔴 Redis: localhost:6379');
+        console.log('  🗄️ PostgreSQL: localhost:15432');
+        console.log('  🔴 Redis: localhost:16379');
         resolve();
       } else {
         log.error('Failed to start dependencies');
@@ -193,8 +193,8 @@ async function startDev() {
     console.log('  🌐 Web Client: http://localhost:5173 (Vite dev server)');
     console.log('  🚀 Server API: http://localhost:3001');
     console.log('  📚 API Docs: http://localhost:3001/api-docs');
-    console.log('  🗄️ PostgreSQL: localhost:5432');
-    console.log('  🔴 Redis: localhost:6379');
+    console.log('  🗄️ PostgreSQL: localhost:15432');
+    console.log('  🔴 Redis: localhost:16379');
     console.log('');
     
     // Start both server and web client applications

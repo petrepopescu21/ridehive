@@ -18,7 +18,26 @@
       "Bash(curl:*)",
       "Bash(pkill:*)",
       "Bash(taskkill:*)",
-      "Bash(npm run lint)"
+      "Bash(npm run lint)",
+      "Bash(npx @react-native-community/cli:*)",
+      "Bash(mv:*)",
+      "Bash(ls:*)",
+      "Bash(npm init:*)",
+      "Bash(npx create-react-native-app:*)",
+      "Bash(cp:*)",
+      "Bash(npm start)",
+      "Bash(npx --yes @react-native-community/cli init RideHiveMobile)",
+      "Bash(cmd /c \"npx @react-native-community/cli init RideHiveMobile\")",
+      "Bash(powershell:*)",
+      "Bash(npx expo:*)",
+      "Bash(npx tsc:*)",
+      "Bash(npm run:*)",
+      "Bash(docker-compose:*)",
+      "Bash(npm ls:*)",
+      "Bash(tail:*)",
+      "Bash(npx pg-sql:*)",
+      "Bash(cat:*)",
+      "Bash(docker exec:*)"
     ],
     "deny": []
   }

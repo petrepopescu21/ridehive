@@ -5,14 +5,13 @@
   "private": true,
   "workspaces": [
     "server",
-    "web-client",
-    "mobile-client"
+    "web-client"
   ],
   "scripts": {
-    "dev": "node scripts/dev.js start",
-    "dev:start": "node scripts/dev.js start",
-    "dev:stop": "node scripts/dev.js stop",
-    "dev:restart": "node scripts/dev.js restart",
+    "start": "NODE_ENV=production node server/server.js",
+    "dev": "node scripts/dev-unified.js",
+    "dev:server": "cd server && npm run dev",
+    "dev:web": "cd web-client && npm run dev",
     "dev:deps": "node scripts/dev.js deps",
     "dev:deps:stop": "node scripts/dev.js deps:stop",
     "dev:logs": "node scripts/dev.js logs",
@@ -20,36 +19,42 @@
     "dev:reset-db": "node scripts/dev.js reset-db",
     "dev:shell:postgres": "node scripts/dev.js shell postgres",
     "dev:shell:redis": "node scripts/dev.js shell redis",
-    "dev:test": "node scripts/dev.js test",
-    "docker:up:prod": "docker-compose up -d",
-    "docker:down:prod": "docker-compose down",
-    "docker:logs:prod": "docker-compose logs -f",
-    "docker:build:prod": "docker-compose build",
-    "docker:ps:prod": "docker-compose ps",
-    "install:all": "npm install && npm run install:server && npm run install:web && npm run install:mobile",
-    "install:server": "cd server && npm install",
-    "install:web": "cd web-client && npm install",
-    "install:mobile": "cd mobile-client && npm install",
-    "start:server": "cd server && npm run dev",
-    "start:web": "cd web-client && npm run dev",
+    "dev:cleanup": "powershell -ExecutionPolicy Bypass -File scripts/cleanup-console.ps1",
+    "build": "npm run build:web",
+    "build:web": "cd web-client && npm run build",
+    "build:production": "npm run build:web && NODE_ENV=production node server/server.js",
     "lint": "npm run lint:server && npm run lint:web",
     "lint:server": "cd server && npm run lint --if-present",
     "lint:web": "cd web-client && npm run lint",
-    "build": "npm run build:server && npm run build:web",
-    "build:server": "cd server && npm run build --if-present",
-    "build:web": "cd web-client && npm run build",
     "test": "npm run test:server && npm run test:web",
     "test:server": "cd server && npm test --if-present",
     "test:web": "cd web-client && npm test --if-present",
-    "help": "node scripts/dev.js help"
+    "install:mobile": "cd RideHive && npm install",
+    "start:mobile": "cd RideHive && npm run start",
+    "android": "cd RideHive && npm run android",
+    "ios": "cd RideHive && npm run ios",
+    "mobile:dev": "node scripts/dev.js deps && npm run start:mobile",
+    "mobile:android": "node scripts/dev.js deps && npm run android",
+    "mobile:ios": "node scripts/dev.js deps && npm run ios",
+    "heroku-postbuild": "npm run build"
   },
   "devDependencies": {
     "chalk": "^4.1.2",
     "cross-spawn": "^7.0.3",
-    "concurrently": "^8.2.2"
-  },
-  "overrides": {
-    "react": "18.2.0"
+    "concurrently": "^8.2.2",
+    "nodemon": "^3.0.1",
+    "@eslint/js": "^9.30.1",
+    "@types/leaflet": "^1.9.20",
+    "@types/react": "^19.1.8",
+    "@types/react-dom": "^19.1.6",
+    "@vitejs/plugin-react": "^4.6.0",
+    "eslint": "^9.30.1",
+    "eslint-plugin-react-hooks": "^5.2.0",
+    "eslint-plugin-react-refresh": "^0.4.20",
+    "globals": "^16.3.0",
+    "typescript": "~5.8.3",
+    "typescript-eslint": "^8.35.1",
+    "vite": "^7.0.4"
   },
   "engines": {
     "node": ">=18.0.0",
@@ -72,5 +77,23 @@
   "bugs": {
     "url": "https://github.com/petrepopescu21/ridehive/issues"
   },
-  "homepage": "https://github.com/petrepopescu21/ridehive#readme"
+  "homepage": "https://github.com/petrepopescu21/ridehive#readme",
+  "dependencies": {
+    "@mapbox/polyline": "^1.2.1",
+    "cors": "^2.8.5",
+    "dotenv": "^16.3.1",
+    "express": "^4.18.2",
+    "express-session": "^1.17.3",
+    "node-fetch": "^2.7.0",
+    "pg": "^8.11.3",
+    "socket.io": "^4.7.2",
+    "swagger-jsdoc": "^6.2.8",
+    "swagger-ui-express": "^5.0.0",
+    "axios": "^1.10.0",
+    "leaflet": "^1.9.4",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0",
+    "react-leaflet": "^5.0.0",
+    "socket.io-client": "^4.8.1"
+  }
 }

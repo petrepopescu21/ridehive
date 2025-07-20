@@ -19,7 +19,7 @@ router.use(requireAuth);
 router.get('/', async (req, res) => {
   try {
     const result = await query(
-      'SELECT id, title, notes, waypoints, created_at, updated_at FROM maps ORDER BY created_at DESC'
+      'SELECT id, title, notes, waypoints, route_coordinates, created_at, updated_at FROM maps ORDER BY created_at DESC'
     );
     
     res.json(result.rows);
@@ -52,7 +52,7 @@ router.get('/:id', async (req, res) => {
     const { id } = req.params;
     
     const result = await query(
-      'SELECT id, title, notes, waypoints, created_at, updated_at FROM maps WHERE id = $1',
+      'SELECT id, title, notes, waypoints, route_coordinates, created_at, updated_at FROM maps WHERE id = $1',
       [id]
     );
     
@@ -101,7 +101,7 @@ router.get('/:id', async (req, res) => {
  */
 router.post('/', async (req, res) => {
   try {
-    const { title, notes = '', waypoints = [] } = req.body;
+    const { title, notes = '', waypoints = [], route_coordinates = [] } = req.body;
     
     if (!title) {
       return res.status(400).json({ error: 'Title is required' });
@@ -111,9 +111,13 @@ router.post('/', async (req, res) => {
       return res.status(400).json({ error: 'Waypoints must be an array' });
     }
     
+    if (!Array.isArray(route_coordinates)) {
+      return res.status(400).json({ error: 'Route coordinates must be an array' });
+    }
+    
     const result = await query(
-      'INSERT INTO maps (title, notes, waypoints) VALUES ($1, $2, $3) RETURNING id, title, notes, waypoints, created_at, updated_at',
-      [title, notes, JSON.stringify(waypoints)]
+      'INSERT INTO maps (title, notes, waypoints, route_coordinates) VALUES ($1, $2, $3, $4) RETURNING id, title, notes, waypoints, route_coordinates, created_at, updated_at',
+      [title, notes, JSON.stringify(waypoints), JSON.stringify(route_coordinates)]
     );
     
     res.status(201).json(result.rows[0]);
@@ -157,7 +161,7 @@ router.post('/', async (req, res) => {
 router.put('/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const { title, notes = '', waypoints = [] } = req.body;
+    const { title, notes = '', waypoints = [], route_coordinates = [] } = req.body;
     
     if (!title) {
       return res.status(400).json({ error: 'Title is required' });
@@ -167,9 +171,13 @@ router.put('/:id', async (req, res) => {
       return res.status(400).json({ error: 'Waypoints must be an array' });
     }
     
+    if (!Array.isArray(route_coordinates)) {
+      return res.status(400).json({ error: 'Route coordinates must be an array' });
+    }
+    
     const result = await query(
-      'UPDATE maps SET title = $1, notes = $2, waypoints = $3, updated_at = CURRENT_TIMESTAMP WHERE id = $4 RETURNING id, title, notes, waypoints, created_at, updated_at',
-      [title, notes, JSON.stringify(waypoints), id]
+      'UPDATE maps SET title = $1, notes = $2, waypoints = $3, route_coordinates = $4, updated_at = CURRENT_TIMESTAMP WHERE id = $5 RETURNING id, title, notes, waypoints, route_coordinates, created_at, updated_at',
+      [title, notes, JSON.stringify(waypoints), JSON.stringify(route_coordinates), id]
     );
     
     if (result.rows.length === 0) {

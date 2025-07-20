@@ -9,6 +9,7 @@ CREATE TABLE IF NOT EXISTS maps (
   title TEXT NOT NULL,
   notes TEXT,
   waypoints JSONB NOT NULL DEFAULT '[]'::jsonb,
+  route_coordinates JSONB DEFAULT '[]'::jsonb,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
@@ -17,14 +18,16 @@ CREATE TABLE IF NOT EXISTS maps (
 CREATE TABLE IF NOT EXISTS rides (
   id SERIAL PRIMARY KEY,
   map_id INTEGER REFERENCES maps(id) ON DELETE CASCADE,
-  pin_code TEXT UNIQUE NOT NULL,
+  rider_pin TEXT UNIQUE NOT NULL,
+  organizer_pin TEXT UNIQUE NOT NULL,
   status TEXT CHECK(status IN ('active', 'ended')) DEFAULT 'active',
   started_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   ended_at TIMESTAMP
 );
 
 -- Indexes for better performance
-CREATE INDEX IF NOT EXISTS idx_rides_pin_code ON rides(pin_code);
+CREATE INDEX IF NOT EXISTS idx_rides_rider_pin ON rides(rider_pin);
+CREATE INDEX IF NOT EXISTS idx_rides_organizer_pin ON rides(organizer_pin);
 CREATE INDEX IF NOT EXISTS idx_rides_status ON rides(status);
 CREATE INDEX IF NOT EXISTS idx_maps_created_at ON maps(created_at);
 

@@ -1,0 +1,70 @@
+{
+  "name": "RideHive",
+  "description": "Real-time ride sharing application with organizer dashboard and mobile app support",
+  "repository": "https://github.com/petrepopescu21/ridehive",
+  "logo": "https://ridehive-app.herokuapp.com/favicon.ico",
+  "keywords": [
+    "ridesharing",
+    "realtime",
+    "socketio",
+    "react",
+    "nodejs",
+    "postgresql",
+    "redis"
+  ],
+  "success_url": "/",
+  "env": {
+    "NODE_ENV": {
+      "description": "Node environment",
+      "value": "production",
+      "required": true
+    },
+    "SESSION_SECRET": {
+      "description": "Secret key for Express sessions",
+      "generator": "secret",
+      "required": true
+    },
+    "ORGANIZER_PASSWORD": {
+      "description": "Password for organizer web dashboard login",
+      "value": "admin123",
+      "required": true
+    },
+    "DATABASE_URL": {
+      "description": "PostgreSQL connection URL (automatically provided by Heroku Postgres)",
+      "required": true
+    },
+    "REDIS_URL": {
+      "description": "Redis connection URL (automatically provided by Heroku Redis)",
+      "required": false
+    },
+    "BASE_URL": {
+      "description": "Base URL for the application",
+      "required": false
+    }
+  },
+  "formation": {
+    "web": {
+      "quantity": 1,
+      "size": "basic"
+    }
+  },
+  "addons": [
+    {
+      "plan": "heroku-postgresql:essential-0",
+      "options": {
+        "version": "15"
+      }
+    },
+    {
+      "plan": "heroku-redis:mini"
+    }
+  ],
+  "buildpacks": [
+    {
+      "url": "heroku/nodejs"
+    }
+  ],
+  "scripts": {
+    "postdeploy": "node server/db/setup.js"
+  }
+}
